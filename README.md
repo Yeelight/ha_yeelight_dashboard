@@ -1,107 +1,109 @@
 # Yeelight Dashboard
 
-Yeelight 品牌的完全自定义仪表盘面板。
+[English](README.md) | [中文](README_zh.md)
 
-## 功能特性
+Yeelight-branded fully customizable dashboard panel for Home Assistant.
 
-- ✅ Yeelight 品牌专属控制界面
-- ✅ 设备管理和控制 UI
-- ✅ 场景编辑和激活
-- ✅ 高级灯光控制（色温、色彩、效果）
-- ✅ 用户偏好存储
-- ✅ 响应式设计
-- ✅ 多语言支持
+## Features
 
-## 安装
+- ✅ Yeelight brand exclusive control interface
+- ✅ Device management and control UI
+- ✅ Scene editing and activation
+- ✅ Advanced lighting control (color temperature, color, effects)
+- ✅ User preferences storage
+- ✅ Responsive design
+- ✅ Multi-language support
 
-### HACS 安装（推荐）
+## Installation
 
-1. 打开 HACS
-2. 搜索 "Yeelight Dashboard"
-3. 点击安装
-4. 重启 Home Assistant
+### HACS Installation (Recommended)
 
-### 手动安装
+1. Open HACS
+2. Search for "Yeelight Dashboard"
+3. Click Install
+4. Restart Home Assistant
 
-1. 下载最新版本
-2. 解压到 `custom_components/yeelight_dashboard/`
-3. 重启 Home Assistant
+### Manual Installation
 
-## 配置
+1. Download the latest release
+2. Extract to `custom_components/yeelight_dashboard/`
+3. Restart Home Assistant
 
-1. 进入 设置 → 设备与服务 → 添加集成
-2. 搜索 "Yeelight Dashboard"
-3. 完成配置
+## Configuration
 
-## 功能模块
+1. Go to Settings → Devices & Services → Add Integration
+2. Search for "Yeelight Dashboard"
+3. Complete configuration
 
-### 首页 (Home)
+## Feature Modules
 
-- 设备概览
-- 快捷控制
-- 场景推荐
-- 状态摘要
+### Home
 
-### 房间 (Rooms)
+- Device overview
+- Quick controls
+- Scene recommendations
+- Status summary
 
-- 房间列表
-- 房间详情
-- 房间设备
+### Rooms
 
-### 设备 (Devices)
+- Room list
+- Room details
+- Room devices
 
-- 设备列表
-- 设备详情
-- 设备控制
+### Devices
 
-### 场景 (Scenes)
+- Device list
+- Device details
+- Device control
 
-- 场景列表
-- 场景编辑
-- 场景激活
+### Scenes
 
-### 灯光 (Lighting)
+- Scene list
+- Scene editing
+- Scene activation
 
-- 灯光控制
-- 色温调节
-- 色彩调节
-- 效果预设
+### Lighting
 
-### 自动化 (Automation)
+- Lighting control
+- Color temperature adjustment
+- Color adjustment
+- Effect presets
 
-- 自动化列表
-- 自动化编辑
-- 定时任务
+### Automation
 
-### 设置 (Settings)
+- Automation list
+- Automation editing
+- Scheduled tasks
 
-- 用户偏好
-- 主题设置
-- 设备管理
+### Settings
 
-## 技术栈
+- User preferences
+- Theme settings
+- Device management
 
-- **后端**：Python 3.11+, Home Assistant API
-- **前端**：Lit 3, TypeScript, Rollup
-- **测试**：pytest, Vitest
+## Tech Stack
 
-## 依赖
+- **Backend**: Python 3.11+, Home Assistant API
+- **Frontend**: Lit 3, TypeScript, Rollup
+- **Testing**: pytest, Vitest
 
-- **ha_yeelight_pro**：Yeelight Pro 集成（软依赖）
+## Dependencies
 
-## API 端点
+- **ha_yeelight_pro**: Yeelight Pro integration (soft dependency)
 
-| 端点 | 方法 | 描述 |
-|------|------|------|
-| `/api/yeelight_dashboard/devices` | GET | 获取设备列表 |
-| `/api/yeelight_dashboard/devices/{id}` | GET | 获取设备详情 |
-| `/api/yeelight_dashboard/devices/{id}/control` | POST | 控制设备 |
-| `/api/yeelight_dashboard/scenes` | GET | 获取场景列表 |
-| `/api/yeelight_dashboard/scenes` | POST | 创建场景 |
-| `/api/yeelight_dashboard/scenes/{id}/activate` | POST | 激活场景 |
-| `/api/yeelight_dashboard/preferences` | GET | 获取用户偏好 |
-| `/api/yeelight_dashboard/preferences` | PUT | 更新用户偏好 |
+## API Endpoints
 
-## 许可证
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| `/api/yeelight_dashboard/devices` | GET | Get device list |
+| `/api/yeelight_dashboard/devices/{id}` | GET | Get device details |
+| `/api/yeelight_dashboard/devices/{id}/control` | POST | Control device |
+| `/api/yeelight_dashboard/scenes` | GET | Get scene list |
+| `/api/yeelight_dashboard/scenes` | POST | Create scene |
+| `/api/yeelight_dashboard/scenes/{id}/activate` | POST | Activate scene |
+| `/api/yeelight_dashboard/preferences` | GET | Get user preferences |
+| `/api/yeelight_dashboard/preferences` | PUT | Update user preferences |
+
+## License
 
 MIT License
