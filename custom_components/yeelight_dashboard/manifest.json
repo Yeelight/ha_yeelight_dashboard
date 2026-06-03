@@ -1,0 +1,14 @@
+{
+  "domain": "yeelight_dashboard",
+  "name": "Yeelight Dashboard",
+  "codeowners": ["@yeelight"],
+  "config_flow": false,
+  "dependencies": [],
+  "after_dependencies": ["yeelight_pro"],
+  "documentation": "https://github.com/Yeelight/ha_yeelight_dashboard",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "requirements": [],
+  "version": "1.0.0",
+  "homeassistant": "2024.1.0"
+}

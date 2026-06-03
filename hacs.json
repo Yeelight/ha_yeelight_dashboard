@@ -1,0 +1,10 @@
+{
+  "name": "Yeelight Dashboard",
+  "homeassistant": "2024.1.0",
+  "render_readme": true,
+  "zip_release": true,
+  "filename": "yeelight_dashboard.zip",
+  "country": ["CN", "US", "EU"],
+  "content_in_root": false,
+  "hacs": "2.0.0"
+}

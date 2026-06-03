@@ -1,0 +1,10 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Yeelight Dashboard",
+        "description": "Yeelight 品牌仪表盘已安装。"
+      }
+    }
+  }
+}
