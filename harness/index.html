@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Yeelight Dashboard Harness</title>
+    <script type="module" src="../dist/ha_yeelight_dashboard.js"></script>
+  </head>
+  <body>
+    <yeelight-dashboard-hero-card></yeelight-dashboard-hero-card>
+    <yeelight-dashboard-canvas-view></yeelight-dashboard-canvas-view>
+    <script type="module">
+      const card = document.querySelector("yeelight-dashboard-hero-card");
+      card.setConfig({ type: "custom:yeelight-dashboard-hero-card", entities: ["light.ceiling", "scene.movie", "update.gateway"] });
+      card.hass = {
+        connected: true,
+        locale: { language: "zh-Hans" },
+        states: {
+          "light.ceiling": { entity_id: "light.ceiling", state: "on", attributes: { friendly_name: "Ceiling Light" } },
+          "scene.movie": { entity_id: "scene.movie", state: "scening", attributes: { friendly_name: "Movie" } },
+          "update.gateway": { entity_id: "update.gateway", state: "on", attributes: { friendly_name: "Gateway Update" } }
+        },
+        callService() {}
+      };
+
+      const canvas = document.querySelector("yeelight-dashboard-canvas-view");
+      const canvasCard = document.createElement("yeelight-dashboard-light-card");
+      canvasCard.setConfig({ type: "custom:yeelight-dashboard-light-card", title: "Canvas Lights", entities: ["light.ceiling"] });
+      canvasCard.hass = card.hass;
+      canvas.setConfig({
+        title: "Canvas",
+        path: "canvas",
+        layout_studio: true,
+        style: {
+          "--yeelight-canvas-columns": "12",
+          "--yeelight-canvas-row-height": "72px",
+          "--yeelight-canvas-gap": "12px"
+        },
+        cards: [
+          {
+            type: "custom:yeelight-dashboard-light-card",
+            view_layout: { key: "overview.lights", x: 0, y: 0, w: 6, h: 2 }
+          }
+        ]
+      });
+      canvas.cards = [canvasCard];
+    </script>
+  </body>
+</html>

@@ -1,10 +1,9 @@
 {
   "name": "Yeelight Dashboard",
-  "homeassistant": "2024.1.0",
+  "filename": "ha_yeelight_dashboard.js",
   "render_readme": true,
-  "zip_release": true,
-  "filename": "yeelight_dashboard.zip",
-  "country": ["CN", "US", "EU"],
   "content_in_root": false,
+  "country": ["CN", "US", "EU"],
+  "homeassistant": "2026.5.0",
   "hacs": "2.0.0"
 }

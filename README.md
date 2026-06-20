@@ -2,107 +2,133 @@
 
 [English](README.md) | [中文](README_zh.md)
 
-Yeelight-branded fully customizable dashboard panel for Home Assistant.
+Yeelight Dashboard is a Home Assistant Community Dashboard Strategy that generates a complete HA-native Yeelight home dashboard from standard Home Assistant registries and `hass.states`.
 
-## Features
+It is not a backend device integration, not a runtime dependency on `ha_yeelight_cards`, and not a direct port of the legacy panel runtime.
 
-- ✅ Yeelight brand exclusive control interface
-- ✅ Device management and control UI
-- ✅ Scene editing and activation
-- ✅ Advanced lighting control (color temperature, color, effects)
-- ✅ User preferences storage
-- ✅ Responsive design
-- ✅ Multi-language support
+## Positioning
+
+| Project | Responsibility |
+| --- | --- |
+| `ha_yeelight_pro` | Yeelight device integration, HA entities, services, and device capabilities. |
+| `ha_yeelight_themes` | Yeelight visual tokens and HA theme variables. Recommended, not required. |
+| `ha_yeelight_cards` | Lightweight Lovelace cards for manual HA dashboard users. Not required by this dashboard. |
+| `ha_yeelight_dashboard` | Product-style generated dashboard, strategy editor, recipes, internal dashboard cards, and legacy migration inventory. |
+
+## Current MVP
+
+- Registers `ll-strategy-dashboard-yeelight-dashboard`.
+- Registers `window.customStrategies` metadata for the HA 2026.5+ Community dashboards picker.
+- Generates HA `sections` views for Overview, Lighting, Areas, Scenes, Environment, Media, and Health.
+- Supports `layout_mode: canvas` through `custom:yeelight-dashboard-canvas-view`; Home Assistant still creates and owns card elements, while the view arranges them from card-level `view_layout` data and exposes visual move/resize controls.
+- Reads Area, Floor, Device, Entity, and Label registries through standard `hass.callWS`.
+- Reads live state from `hass.states`.
+- Identifies Yeelight entities through `entityRegistry.platform === "yeelight_pro"` or device metadata, never through friendly-name keywords.
+- Provides internal dashboard cards such as `custom:yeelight-dashboard-hero-card`, `custom:yeelight-dashboard-light-card`, `custom:yeelight-dashboard-room-card`, and `custom:yeelight-dashboard-health-card`.
+- Keeps a generated legacy inventory under `docs/legacy-inventory/`.
 
 ## Installation
 
-### HACS Installation (Recommended)
+Install the built frontend resource:
 
-1. Open HACS
-2. Search for "Yeelight Dashboard"
-3. Click Install
-4. Restart Home Assistant
+```yaml
+url: /hacsfiles/ha_yeelight_dashboard/ha_yeelight_dashboard.js
+type: module
+```
 
-### Manual Installation
+Manual resource path:
 
-1. Download the latest release
-2. Extract to `custom_components/yeelight_dashboard/`
-3. Restart Home Assistant
+```yaml
+url: /local/ha_yeelight_dashboard.js
+type: module
+```
 
-## Configuration
+Then create a dashboard with:
 
-1. Go to Settings → Devices & Services → Add Integration
-2. Search for "Yeelight Dashboard"
-3. Complete configuration
+```yaml
+strategy:
+  type: custom:yeelight-dashboard
+```
 
-## Feature Modules
+Optional canvas layout mode:
 
-### Home
+```yaml
+strategy:
+  type: custom:yeelight-dashboard
+  layout_mode: canvas
+```
 
-- Device overview
-- Quick controls
-- Scene recommendations
-- Status summary
+Default `sections` dashboards use Home Assistant's native section editing, drag ordering, and card sizing. For closer-to-freeform positioning, use `layout_mode: canvas` or the Panel profile. Managed Canvas keeps the dashboard generated while preserving layout freedom: every generated card gets a stable key, a visible move handle, a resize handle, and numeric `x/y/w/h/z` controls. Copy the Layout Studio overrides into the strategy editor's `layout_overrides` field to persist those placements:
 
-### Rooms
+```yaml
+strategy:
+  type: custom:yeelight-dashboard
+  layout_mode: canvas
+  layout_overrides:
+    overview:
+      overview.hero:
+        x: 0
+        y: 0
+        w: 12
+        h: 4
+```
 
-- Room list
-- Room details
-- Room devices
+On Home Assistant 2026.5+, the strategy is also exposed in the new dashboard dialog under Community dashboards after the resource is loaded.
 
-### Devices
+## Development
 
-- Device list
-- Device details
-- Device control
+```bash
+npm install
+npm run lint
+npm run test
+npm run build
+npm run test:browser
+```
 
-### Scenes
+The release bundle is `dist/ha_yeelight_dashboard.js`.
 
-- Scene list
-- Scene editing
-- Scene activation
+Optional authenticated live Home Assistant smoke:
 
-### Lighting
+```bash
+HA_LIVE_URL=http://localhost:18124 \
+HA_LIVE_STORAGE_STATE=/absolute/path/to/storage-state.json \
+npm run test:live
+```
 
-- Lighting control
-- Color temperature adjustment
-- Color adjustment
-- Effect presets
+Or with one-shot credentials:
 
-### Automation
+```bash
+HA_LIVE_URL=http://localhost:18124 \
+HA_LIVE_USERNAME=your-user \
+HA_LIVE_PASSWORD=your-password \
+HA_LIVE_SCREENSHOT=output/playwright/ha-live-smoke.png \
+npm run test:live
+```
 
-- Automation list
-- Automation editing
-- Scheduled tasks
+Without `HA_LIVE_URL`, or without both `HA_LIVE_STORAGE_STATE` and credentials, `test:live` exits as a documented skip. The live smoke injects the built bundle into an authenticated HA page and calls the dashboard strategy from `document.querySelector("home-assistant").hass`; it does not create dashboards, call services, or write HA configuration.
 
-### Settings
+After installing the built file into HA as `/config/www/ha_yeelight_dashboard.js` and registering it as a Lovelace resource, verify the real resource path with:
 
-- User preferences
-- Theme settings
-- Device management
+```bash
+HA_LIVE_URL=http://localhost:18124 \
+HA_LIVE_USERNAME=your-user \
+HA_LIVE_PASSWORD=your-password \
+npm run test:ha-resource
+```
 
-## Tech Stack
+`test:ha-resource` checks that `/local/ha_yeelight_dashboard.js` hashes exactly to `dist/ha_yeelight_dashboard.js`, then opens the Lovelace dashboard path and waits for HA itself to load the resource and expose `window.customStrategies`. It defaults to `/lovelace`; set `HA_LIVE_DASHBOARD_PATH` if your dashboard uses another URL path. Opening the HA 2026 `/home` route is not enough, because that route does not load Lovelace resources.
 
-- **Backend**: Python 3.11+, Home Assistant API
-- **Frontend**: Lit 3, TypeScript, Rollup
-- **Testing**: pytest, Vitest
+Both live smoke scripts wait for at least one `hass.states` entry before generating by default. Use `HA_LIVE_MIN_STATES=0` only for intentional empty-state fixtures, `HA_LIVE_TIMEOUT_MS` to tune slow browser navigation, and `HA_LIVE_RESOURCE_TIMEOUT_MS` to tune the upfront `/local/...` resource fetch timeout.
 
-## Dependencies
+## Legacy Inventory
 
-- **ha_yeelight_pro**: Yeelight Pro integration (soft dependency)
+Regenerate the legacy inventory from the monorepo root:
 
-## API Endpoints
+```bash
+node "extensions/ha_yeelight_dashboard/tools/legacy-migrator/scan-legacy-inventory.mjs"
+```
 
-| Endpoint | Method | Description |
-| --- | --- | --- |
-| `/api/yeelight_dashboard/devices` | GET | Get device list |
-| `/api/yeelight_dashboard/devices/{id}` | GET | Get device details |
-| `/api/yeelight_dashboard/devices/{id}/control` | POST | Control device |
-| `/api/yeelight_dashboard/scenes` | GET | Get scene list |
-| `/api/yeelight_dashboard/scenes` | POST | Create scene |
-| `/api/yeelight_dashboard/scenes/{id}/activate` | POST | Activate scene |
-| `/api/yeelight_dashboard/preferences` | GET | Get user preferences |
-| `/api/yeelight_dashboard/preferences` | PUT | Update user preferences |
+The inventory covers the old local implementation under `config/` and `custom_components/yeelight_dashboard/`.
 
 ## License
 

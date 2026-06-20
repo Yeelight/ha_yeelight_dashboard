@@ -1,0 +1,30 @@
+{
+  "name": "ha_yeelight_dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Home Assistant Community Dashboard Strategy for Yeelight homes.",
+  "scripts": {
+    "build": "vite build",
+    "lint": "tsc --noEmit",
+    "test": "vitest --run",
+    "test:browser": "node scripts/browser-assertions.mjs",
+    "test:live": "node scripts/ha-live-smoke.mjs",
+    "test:ha-resource": "node scripts/ha-resource-smoke.mjs",
+    "validate:release": "node scripts/validate-release.mjs"
+  },
+  "dependencies": {
+    "lit": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.3",
+    "happy-dom": "^20.10.3",
+    "playwright": "^1.61.0",
+    "typescript": "^5.8.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.9"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

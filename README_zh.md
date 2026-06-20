@@ -2,107 +2,133 @@
 
 [English](README.md) | [中文](README_zh.md)
 
-Yeelight 品牌的完全自定义仪表盘面板。
+Yeelight Dashboard 是一个 Home Assistant Community Dashboard Strategy，用标准 HA registry 和 `hass.states` 自动生成完整的易来家庭中枢仪表盘。
 
-## 功能特性
+它不是后端设备集成，不运行时依赖 `ha_yeelight_cards`，也不是旧版 Panel runtime 的原样搬运。
 
-- ✅ Yeelight 品牌专属控制界面
-- ✅ 设备管理和控制 UI
-- ✅ 场景编辑和激活
-- ✅ 高级灯光控制（色温、色彩、效果）
-- ✅ 用户偏好存储
-- ✅ 响应式设计
-- ✅ 多语言支持
+## 项目边界
+
+| 项目 | 职责 |
+| --- | --- |
+| `ha_yeelight_pro` | 易来设备接入、HA 实体、服务和能力语义。 |
+| `ha_yeelight_themes` | 易来视觉 token 和 HA 主题变量；推荐安装，但不是硬依赖。 |
+| `ha_yeelight_cards` | 给手工配置 HA 仪表盘用户使用的轻量 Lovelace 卡片包。 |
+| `ha_yeelight_dashboard` | 产品型自动生成仪表盘、Strategy Editor、Recipe、内部卡片和旧版迁移盘点。 |
+
+## 当前 MVP
+
+- 注册 `ll-strategy-dashboard-yeelight-dashboard`。
+- 注册 `window.customStrategies`，可被 HA 2026.5+ 的 Community dashboards 入口发现。
+- 生成 Overview、Lighting、Areas、Scenes、Environment、Media、Health 的 HA `sections` 视图。
+- 支持 `layout_mode: canvas`，通过 `custom:yeelight-dashboard-canvas-view` 承接自由布局；卡片仍由 Home Assistant 创建和维护，自定义视图根据卡片级 `view_layout` 排布，并提供可视拖拽和缩放控件。
+- 通过标准 `hass.callWS` 读取 Area、Floor、Device、Entity、Label registry。
+- 通过 `hass.states` 读取实时状态。
+- 通过 `entityRegistry.platform === "yeelight_pro"` 或设备元数据识别易来实体，不使用中文名称关键词分类。
+- 提供 `custom:yeelight-dashboard-hero-card`、`custom:yeelight-dashboard-light-card`、`custom:yeelight-dashboard-room-card`、`custom:yeelight-dashboard-health-card` 等内部卡片。
+- 在 `docs/legacy-inventory/` 保留旧版成果盘点。
 
 ## 安装
 
-### HACS 安装（推荐）
+HACS 前端资源路径：
 
-1. 打开 HACS
-2. 搜索 "Yeelight Dashboard"
-3. 点击安装
-4. 重启 Home Assistant
+```yaml
+url: /hacsfiles/ha_yeelight_dashboard/ha_yeelight_dashboard.js
+type: module
+```
 
-### 手动安装
+手动安装资源路径：
 
-1. 下载最新版本
-2. 解压到 `custom_components/yeelight_dashboard/`
-3. 重启 Home Assistant
+```yaml
+url: /local/ha_yeelight_dashboard.js
+type: module
+```
 
-## 配置
+然后创建仪表盘：
 
-1. 进入 设置 → 设备与服务 → 添加集成
-2. 搜索 "Yeelight Dashboard"
-3. 完成配置
+```yaml
+strategy:
+  type: custom:yeelight-dashboard
+```
 
-## 功能模块
+可选 Canvas 布局模式：
 
-### 首页
+```yaml
+strategy:
+  type: custom:yeelight-dashboard
+  layout_mode: canvas
+```
 
-- 设备概览
-- 快捷控制
-- 场景推荐
-- 状态摘要
+默认 `sections` 仪表盘使用 Home Assistant 原生的 Section 编辑、拖拽排序和卡片尺寸调整。若需要更接近旧版自由拖拽的能力，请使用 `layout_mode: canvas` 或 Panel profile。Managed Canvas 会保留 Strategy 自动生成能力，同时给每张生成卡片稳定 key、移动手柄、缩放手柄和 `x/y/w/h/z` 数值控件。把 Layout Studio 导出的 overrides 写入 Strategy Editor 的 `layout_overrides` 字段即可持久化位置：
 
-### 房间
+```yaml
+strategy:
+  type: custom:yeelight-dashboard
+  layout_mode: canvas
+  layout_overrides:
+    overview:
+      overview.hero:
+        x: 0
+        y: 0
+        w: 12
+        h: 4
+```
 
-- 房间列表
-- 房间详情
-- 房间设备
+Home Assistant 2026.5+ 中，资源加载后也会在新建仪表盘的 Community dashboards 区域出现。
 
-### 设备
+## 开发
 
-- 设备列表
-- 设备详情
-- 设备控制
+```bash
+npm install
+npm run lint
+npm run test
+npm run build
+npm run test:browser
+```
 
-### 场景
+发布产物是 `dist/ha_yeelight_dashboard.js`。
 
-- 场景列表
-- 场景编辑
-- 场景激活
+可选的已登录真实 Home Assistant smoke：
 
-### 灯光
+```bash
+HA_LIVE_URL=http://localhost:18124 \
+HA_LIVE_STORAGE_STATE=/absolute/path/to/storage-state.json \
+npm run test:live
+```
 
-- 灯光控制
-- 色温调节
-- 色彩调节
-- 效果预设
+或使用一次性登录账号：
 
-### 自动化
+```bash
+HA_LIVE_URL=http://localhost:18124 \
+HA_LIVE_USERNAME=your-user \
+HA_LIVE_PASSWORD=your-password \
+HA_LIVE_SCREENSHOT=output/playwright/ha-live-smoke.png \
+npm run test:live
+```
 
-- 自动化列表
-- 自动化编辑
-- 定时任务
+没有 `HA_LIVE_URL`，或同时缺少 `HA_LIVE_STORAGE_STATE` 与账号密码时，`test:live` 会按跳过处理。live smoke 只把当前构建产物注入已登录 HA 页面，并通过 `document.querySelector("home-assistant").hass` 调用 dashboard strategy；不会创建仪表盘、调用服务或写入 HA 配置。
 
-### 设置
+如果已经把构建产物安装到 HA `/config/www/ha_yeelight_dashboard.js` 并注册为 Lovelace resource，可验证真实资源加载：
 
-- 用户偏好
-- 主题设置
-- 设备管理
+```bash
+HA_LIVE_URL=http://localhost:18124 \
+HA_LIVE_USERNAME=your-user \
+HA_LIVE_PASSWORD=your-password \
+npm run test:ha-resource
+```
 
-## 技术栈
+`test:ha-resource` 会校验 `/local/ha_yeelight_dashboard.js` 和本地 `dist/ha_yeelight_dashboard.js` 的 hash 一致，然后打开 Lovelace 仪表盘路径，等待 HA 自己加载资源后检查 `window.customStrategies`。默认路径是 `/lovelace`；如果你的仪表盘路径不同，可以设置 `HA_LIVE_DASHBOARD_PATH`。只打开 HA 2026 的 `/home` 新首页是不够的，因为那个页面不会加载 Lovelace resources。
 
-- **后端**：Python 3.11+, Home Assistant API
-- **前端**：Lit 3, TypeScript, Rollup
-- **测试**：pytest, Vitest
+两个 live smoke 默认都会等到 `hass.states` 至少有 1 个实体后再生成仪表盘。只有明确要测空态 fixture 时才设置 `HA_LIVE_MIN_STATES=0`；本地 HA 较慢时可以用 `HA_LIVE_TIMEOUT_MS` 调整浏览器导航等待，用 `HA_LIVE_RESOURCE_TIMEOUT_MS` 调整前置 `/local/...` 资源拉取超时。
 
-## 依赖
+## Legacy Inventory
 
-- **ha_yeelight_pro**：Yeelight Pro 集成（软依赖）
+在 monorepo 根目录重新生成旧版盘点：
 
-## API 端点
+```bash
+node "extensions/ha_yeelight_dashboard/tools/legacy-migrator/scan-legacy-inventory.mjs"
+```
 
-| 端点 | 方法 | 描述 |
-| --- | --- | --- |
-| `/api/yeelight_dashboard/devices` | GET | 获取设备列表 |
-| `/api/yeelight_dashboard/devices/{id}` | GET | 获取设备详情 |
-| `/api/yeelight_dashboard/devices/{id}/control` | POST | 控制设备 |
-| `/api/yeelight_dashboard/scenes` | GET | 获取场景列表 |
-| `/api/yeelight_dashboard/scenes` | POST | 创建场景 |
-| `/api/yeelight_dashboard/scenes/{id}/activate` | POST | 激活场景 |
-| `/api/yeelight_dashboard/preferences` | GET | 获取用户偏好 |
-| `/api/yeelight_dashboard/preferences` | PUT | 更新用户偏好 |
+盘点输入覆盖旧版 `config/` 和 `custom_components/yeelight_dashboard/`。
 
 ## 许可证
 
