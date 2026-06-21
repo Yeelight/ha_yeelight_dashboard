@@ -2,7 +2,7 @@ import { domainOf, isAvailable } from "../model/registry";
 import type { DashboardCardSummary, NormalizedEntity } from "./types";
 import type { HassEntity, HomeAssistant } from "../types";
 
-const READ_ONLY_DOMAINS = new Set(["sensor", "binary_sensor", "event", "update"]);
+const READ_ONLY_DOMAINS = new Set(["sensor", "binary_sensor", "event", "update", "weather"]);
 const ACTION_DOMAINS = new Set(["scene", "button"]);
 const CONTROL_DOMAINS = new Set(["light", "switch", "fan", "cover", "climate", "humidifier", "media_player", "lock"]);
 
@@ -70,6 +70,8 @@ function iconFor(stateObj: HassEntity, domain: string): string {
       cover: "mdi:curtains",
       climate: "mdi:thermostat",
       fan: "mdi:fan",
+      humidifier: "mdi:air-humidifier",
+      weather: "mdi:weather-partly-cloudy",
       sensor: "mdi:gauge",
       binary_sensor: "mdi:checkbox-marked-circle-outline",
       event: "mdi:calendar-alert",

@@ -1,6 +1,7 @@
 import type { DashboardContext } from "../model/context";
 import { domainOf, entityName, isAvailable } from "../model/registry";
 import { gridOptionsForKind } from "../cards/grid-options";
+import { localize } from "../i18n";
 import type { DashboardAreaSummary, DashboardCardKind } from "../cards/types";
 import type { LovelaceCardConfig, LovelaceSectionConfig } from "../types";
 
@@ -20,17 +21,22 @@ export const RECIPES: DashboardRecipe[] = [
     id: "overview-core",
     target: "overview",
     priority: 10,
-    sourceLegacyWidgets: ["hero", "rooms", "favorite-lights", "quick-scenes", "health"],
+    sourceLegacyWidgets: ["hero", "status", "notice", "rooms", "favorite-lights", "quick-scenes", "ecosystem", "health"],
     match: () => true,
     build: (context) => [
-      section("Home", [dashboardCard("hero", "家庭中枢", context.entities, "overview.hero", { area_summaries: areaSummaries(context) })]),
-      section("Control", [
-        dashboardCard("light", "灯光概览", domainEntities(context, "light"), "overview.lights"),
-        dashboardCard("rooms", "房间概览", context.entities, "overview.rooms", { area_summaries: areaSummaries(context) })
+      section(localize(context.hass, "section.home"), [
+        dashboardCard(context, "hero", context.entities, "overview.hero", { area_summaries: areaSummaries(context) }),
+        dashboardCard(context, "status", context.entities, "overview.status", { area_summaries: areaSummaries(context) })
       ]),
-      section("Operations", [
-        dashboardCard("routines", "场景与例程", routineEntities(context), "overview.routines"),
-        dashboardCard("health", "系统健康", context.entities, "overview.health")
+      section(localize(context.hass, "section.control"), [
+        dashboardCard(context, "light", domainEntities(context, "light"), "overview.lights"),
+        dashboardCard(context, "rooms", context.entities, "overview.rooms", { area_summaries: areaSummaries(context) })
+      ]),
+      section(localize(context.hass, "section.operations"), [
+        dashboardCard(context, "routines", routineEntities(context), "overview.routines"),
+        dashboardCard(context, "notice", context.entities, "overview.notice"),
+        dashboardCard(context, "ecosystem", context.entities, "overview.ecosystem", { area_summaries: areaSummaries(context) }),
+        dashboardCard(context, "health", context.entities, "overview.health")
       ])
     ]
   },
@@ -40,42 +46,54 @@ export const RECIPES: DashboardRecipe[] = [
     priority: 20,
     sourceLegacyWidgets: ["favorite-lights", "light-status-card", "light-overview-card", "light-devices"],
     match: (context) => domainEntities(context, "light").length > 0,
-    build: (context) => [section("Lights", tiles(domainEntities(context, "light").slice(0, 12)))]
+    build: (context) => [section(localize(context.hass, "section.lighting"), [dashboardCard(context, "light", domainEntities(context, "light"), "lighting.overview"), ...tiles(domainEntities(context, "light").slice(0, 12))])]
   },
   {
-    id: "areas-native",
+    id: "areas-product",
     target: "areas",
     priority: 30,
-    sourceLegacyWidgets: ["rooms", "room-card", "room-devices"],
+    sourceLegacyWidgets: ["rooms", "room-card", "room-devices", "devices", "device-list", "device-single", "universal-card"],
     match: (context) => context.index.areas.length > 0,
-    build: (context) =>
-      populatedAreas(context).slice(0, 8).map((area) =>
+    build: (context) => [
+      section(localize(context.hass, "section.devices"), [
+        dashboardCard(context, "devices", deviceEntities(context), "areas.devices", { area_summaries: areaSummaries(context) }),
+        dashboardCard(context, "rooms", context.entities, "areas.rooms", { area_summaries: areaSummaries(context) })
+      ]),
+      ...populatedAreas(context).slice(0, 8).map((area) =>
         section(area.name, [
-          dashboardCard("room", area.name, visibleAreaEntities(context, area.area_id), `area.${area.area_id}.summary`, {
+          dashboardCard(context, "room", visibleAreaEntities(context, area.area_id), `area.${area.area_id}.summary`, {
+            title: area.name,
             area_summaries: [areaSummary(context, area.area_id, area.name)]
           }),
           ...tiles(featuredAreaEntities(context, area.area_id).slice(0, 8))
         ])
       )
+    ]
   },
   {
-    id: "routines-native",
+    id: "routines-product",
     target: "routines",
     priority: 40,
-    sourceLegacyWidgets: ["quick-scenes", "scene-list", "script-panel", "automations", "button-card"],
+    sourceLegacyWidgets: ["quick-scenes", "scene-list", "quick-command-card", "script-panel", "automations", "scene-single-card", "automation-single-card", "script-single-card", "button-card"],
     match: (context) => routineEntities(context).length > 0,
-    build: (context) => [section("Scenes & Routines", routineEntities(context).slice(0, context.config.preferences.scene_limit).map(entityButton))]
+    build: (context) => [
+      section(localize(context.hass, "section.routines"), [
+        dashboardCard(context, "routines", routineEntities(context), "routines.summary"),
+        ...routineEntities(context).slice(0, context.config.preferences.scene_limit).map(entityButton)
+      ])
+    ]
   },
   {
-    id: "environment-native",
+    id: "environment-product",
     target: "environment",
     priority: 50,
-    sourceLegacyWidgets: ["sensor-card", "illuminance-card", "weather-card", "climate-card"],
-    match: (context) => ["sensor", "binary_sensor", "climate", "weather"].some((domain) => domainEntities(context, domain).length),
+    sourceLegacyWidgets: ["sensor-card", "illuminance-card", "weather-card", "climate-card", "fan-card", "humidifier-card", "water-purifier-card"],
+    match: (context) => environmentEntities(context).length > 0,
     build: (context) => [
-      section("Environment", [
+      section(localize(context.hass, "section.environment"), [
+        dashboardCard(context, "environment", environmentEntities(context), "environment.summary"),
         ...weatherCards(domainEntities(context, "weather").slice(0, 2)),
-        ...tiles(["climate", "sensor", "binary_sensor"].flatMap((domain) => domainEntities(context, domain)).slice(0, 12))
+        ...tiles(["climate", "fan", "humidifier", "sensor", "binary_sensor"].flatMap((domain) => domainEntities(context, domain)).slice(0, 12))
       ])
     ]
   },
@@ -85,7 +103,7 @@ export const RECIPES: DashboardRecipe[] = [
     priority: 60,
     sourceLegacyWidgets: ["media", "media-player-card", "broadcast-radio-card", "remote-card"],
     match: (context) => domainEntities(context, "media_player").length > 0,
-    build: (context) => [section("Media", domainEntities(context, "media_player").slice(0, 6).map((entity) => ({ type: "media-control", entity })))]
+    build: (context) => [section(localize(context.hass, "section.media"), domainEntities(context, "media_player").slice(0, 6).map((entity) => ({ type: "media-control", entity })))]
   },
   {
     id: "health-native",
@@ -94,8 +112,10 @@ export const RECIPES: DashboardRecipe[] = [
     sourceLegacyWidgets: ["ecosystem", "health", "updates-card", "repairs-backup-card", "events", "history"],
     match: () => true,
     build: (context) => [
-      section("Health", [
-        dashboardCard("health", "Yeelight Pro 健康", context.entities, "health.summary"),
+      section(localize(context.hass, "section.health"), [
+        dashboardCard(context, "ecosystem", context.entities, "health.ecosystem", { area_summaries: areaSummaries(context) }),
+        dashboardCard(context, "notice", context.entities, "health.notices"),
+        dashboardCard(context, "health", context.entities, "health.summary"),
         ...tiles([...domainEntities(context, "update"), ...context.index.unassignedEntities.filter((entity) => context.entities.includes(entity)).slice(0, 8)]),
         ...calendarCards(domainEntities(context, "calendar").slice(0, 2)),
         ...todoCards(domainEntities(context, "todo").slice(0, 2)),
@@ -111,10 +131,10 @@ export function buildRecipeSections(target: RecipeTarget, context: DashboardCont
     .flatMap((recipe) => recipe.build(context));
 }
 
-function dashboardCard(kind: DashboardCardKind, title: string, entities: string[], layoutKey: string, config: Record<string, unknown> = {}): LovelaceCardConfig {
+function dashboardCard(context: DashboardContext, kind: DashboardCardKind, entities: string[], layoutKey: string, config: Record<string, unknown> = {}): LovelaceCardConfig {
   return {
     type: `custom:yeelight-dashboard-${kind}-card`,
-    title,
+    title: localize(context.hass, `card.${kind}.title`),
     entities,
     ...config,
     view_layout: { key: layoutKey },
@@ -189,6 +209,16 @@ function domainEntities(context: DashboardContext, domain: string): string[] {
 
 function routineEntities(context: DashboardContext): string[] {
   return ["scene", "script", "automation", "button"].flatMap((domain) => domainEntities(context, domain));
+}
+
+function deviceEntities(context: DashboardContext): string[] {
+  return ["light", "switch", "cover", "climate", "fan", "humidifier", "media_player", "lock", "sensor", "binary_sensor"].flatMap((domain) =>
+    domainEntities(context, domain)
+  );
+}
+
+function environmentEntities(context: DashboardContext): string[] {
+  return ["weather", "climate", "fan", "humidifier", "sensor", "binary_sensor"].flatMap((domain) => domainEntities(context, domain));
 }
 
 function shouldShow(context: DashboardContext, entityId: string): boolean {

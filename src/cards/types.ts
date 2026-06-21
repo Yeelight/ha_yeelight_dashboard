@@ -1,6 +1,22 @@
 import type { HassEntity, HomeAssistant } from "../types";
 
-export type DashboardCardKind = "hero" | "light" | "rooms" | "room" | "routines" | "health";
+export type DashboardCardKind =
+  | "hero"
+  | "status"
+  | "notice"
+  | "light"
+  | "rooms"
+  | "room"
+  | "devices"
+  | "routines"
+  | "environment"
+  | "ecosystem"
+  | "health";
+
+export type DashboardCardGridOptions = {
+  columns: number;
+  rows: number;
+};
 
 export type DashboardAreaSummary = {
   areaId: string;
@@ -15,8 +31,16 @@ export type DashboardAreaSummary = {
 export type DashboardCardConfig = {
   type: string;
   title?: string;
+  subtitle?: string;
   entities?: string[];
   area_summaries?: DashboardAreaSummary[];
+  density?: "comfortable" | "compact";
+  item_limit?: number;
+  show_metrics?: boolean;
+  show_actions?: boolean;
+  show_area_summaries?: boolean;
+  variant?: "standard" | "compact" | "panel";
+  grid_options?: Partial<DashboardCardGridOptions>;
 };
 
 export type NormalizedEntity = {

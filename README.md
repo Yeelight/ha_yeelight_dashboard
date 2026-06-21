@@ -24,7 +24,7 @@ It is not a backend device integration, not a runtime dependency on `ha_yeelight
 - Reads Area, Floor, Device, Entity, and Label registries through standard `hass.callWS`.
 - Reads live state from `hass.states`.
 - Identifies Yeelight entities through `entityRegistry.platform === "yeelight_pro"` or device metadata, never through friendly-name keywords.
-- Provides internal dashboard cards such as `custom:yeelight-dashboard-hero-card`, `custom:yeelight-dashboard-light-card`, `custom:yeelight-dashboard-room-card`, and `custom:yeelight-dashboard-health-card`.
+- Provides product composite cards such as `custom:yeelight-dashboard-hero-card`, `status-card`, `notice-card`, `light-card`, `rooms-card`, `room-card`, `devices-card`, `routines-card`, `environment-card`, `ecosystem-card`, and `health-card`; they register HA visual editors through `window.customCards` for take-control/manual editing, but remain dashboard-focused and do not replace the lightweight `ha_yeelight_cards` package.
 - Keeps a generated legacy inventory under `docs/legacy-inventory/`.
 
 ## Installation
@@ -58,19 +58,17 @@ strategy:
   layout_mode: canvas
 ```
 
-Default `sections` dashboards use Home Assistant's native section editing, drag ordering, and card sizing. For closer-to-freeform positioning, use `layout_mode: canvas` or the Panel profile. Managed Canvas keeps the dashboard generated while preserving layout freedom: every generated card gets a stable key, a visible move handle, a resize handle, and numeric `x/y/w/h/z` controls. Copy the Layout Studio overrides into the strategy editor's `layout_overrides` field to persist those placements:
+Default `sections` dashboards use Home Assistant's native section editing, drag ordering, and card sizing. For closer-to-freeform positioning, use `layout_mode: canvas` or the Panel profile. Managed Canvas keeps the dashboard generated while preserving layout freedom: every generated card gets a stable key, a visible move handle, a resize handle, and numeric `x/y/w/h/z` controls. Layout Studio copies a complete JSON snippet; use `Import copied Canvas layout` in the Strategy Editor, or edit `layout_overrides` manually:
 
-```yaml
-strategy:
-  type: custom:yeelight-dashboard
-  layout_mode: canvas
-  layout_overrides:
-    overview:
-      overview.hero:
-        x: 0
-        y: 0
-        w: 12
-        h: 4
+```json
+{
+  "layout_mode": "canvas",
+  "layout_overrides": {
+    "overview": {
+      "overview.hero": { "x": 0, "y": 0, "w": 12, "h": 4 }
+    }
+  }
+}
 ```
 
 On Home Assistant 2026.5+, the strategy is also exposed in the new dashboard dialog under Community dashboards after the resource is loaded.

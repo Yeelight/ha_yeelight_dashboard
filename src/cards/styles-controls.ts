@@ -54,6 +54,14 @@ export const dashboardCardControlStyles = css`
     font-weight: 650;
   }
 
+  .variant-panel .icon-button,
+  .variant-panel .tile-icon,
+  .variant-panel .chip-action,
+  .variant-panel .text-action,
+  .variant-panel .primary-action {
+    min-height: 42px;
+  }
+
   .icon-button:hover,
   .tile-icon:hover,
   .chip-action:hover,
@@ -91,7 +99,9 @@ export const dashboardCardControlStyles = css`
     .area-strip,
     .room-grid,
     .tile-grid,
-    .quick-grid {
+    .quick-grid,
+    .status-groups,
+    .compact-strip {
       grid-template-columns: 1fr;
     }
 

@@ -4,6 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Yeelight Dashboard Harness</title>
+    <script>
+      if (!customElements.get("ha-form")) {
+        customElements.define("ha-form", class extends HTMLElement {});
+      }
+    </script>
     <script type="module" src="../dist/ha_yeelight_dashboard.js"></script>
   </head>
   <body>

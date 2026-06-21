@@ -1,4 +1,4 @@
-import { LitElement, css, html, type TemplateResult } from "lit";
+import { LitElement, html, type TemplateResult } from "lit";
 
 import {
   AREA_MODE_OPTIONS,
@@ -10,94 +10,16 @@ import {
   normalizeConfig
 } from "./config";
 import type { DashboardLayoutOverrides, DashboardViewKey, HomeAssistant, YeelightDashboardConfig } from "../types";
+import { localize, type TranslationKey } from "../i18n";
+import { strategyEditorStyles } from "./editor.styles";
 
 export class YeelightDashboardStrategyEditor extends LitElement {
-  static override styles = css`
-    :host {
-      display: block;
-      color: var(--primary-text-color, #212121);
-    }
-
-    .editor {
-      display: grid;
-      gap: 14px;
-    }
-
-    fieldset,
-    label {
-      display: grid;
-      gap: 6px;
-      min-width: 0;
-    }
-
-    fieldset {
-      margin: 0;
-      padding: 12px;
-      border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
-      border-radius: 8px;
-    }
-
-    legend,
-    span {
-      color: var(--secondary-text-color, #727272);
-      font-size: 13px;
-    }
-
-    select,
-    input,
-    textarea {
-      min-height: 36px;
-      min-width: 0;
-      border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
-      border-radius: 8px;
-      padding: 0 10px;
-      background: var(--card-background-color, #fff);
-      color: var(--primary-text-color, #212121);
-      font: inherit;
-    }
-
-    textarea {
-      min-height: 120px;
-      padding-block: 8px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12px;
-      resize: vertical;
-    }
-
-    .error {
-      color: var(--error-color, #ba1a1a);
-    }
-
-    .notice {
-      border-radius: 8px;
-      padding: 8px 10px;
-      color: var(--primary-text-color, #212121);
-      background: color-mix(in srgb, var(--warning-color, #fbbc04) 16%, transparent);
-      font-size: 13px;
-    }
-
-    .check-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 8px 12px;
-    }
-
-    .checkbox {
-      grid-template-columns: auto minmax(0, 1fr);
-      align-items: center;
-      gap: 8px;
-    }
-
-    .checkbox input {
-      min-height: 18px;
-      inline-size: 18px;
-      padding: 0;
-    }
-  `;
+  static override styles = strategyEditorStyles;
 
   private config = normalizeConfig();
   private _hass?: HomeAssistant;
   private layoutError = "";
+  private layoutMessage = "";
 
   setConfig(config: Partial<YeelightDashboardConfig>): void {
     this.config = normalizeConfig(config);
@@ -116,12 +38,12 @@ export class YeelightDashboardStrategyEditor extends LitElement {
   protected override render(): TemplateResult {
     return html`
       <div class="editor">
-        ${this.renderSelect("Profile", "profile", PROFILE_OPTIONS)}
-        ${this.renderSelect("Theme", "theme", THEME_OPTIONS)}
+        ${this.renderSelect("editor.strategy.profile", "profile", PROFILE_OPTIONS)}
+        ${this.renderSelect("editor.strategy.theme", "theme", THEME_OPTIONS)}
         ${this.renderThemeNotice()}
-        ${this.renderSelect("Scope", "scope", SCOPE_OPTIONS)}
-        ${this.renderSelect("Layout", "layout_mode", LAYOUT_OPTIONS)}
-        ${this.renderSelect("Areas", "area_mode", AREA_MODE_OPTIONS)}
+        ${this.renderSelect("editor.strategy.scope", "scope", SCOPE_OPTIONS)}
+        ${this.renderSelect("editor.strategy.layout", "layout_mode", LAYOUT_OPTIONS)}
+        ${this.renderSelect("editor.strategy.areas", "area_mode", AREA_MODE_OPTIONS)}
         ${this.renderAreas()}
         ${this.renderViews()}
         ${this.renderPreferences()}
@@ -130,13 +52,13 @@ export class YeelightDashboardStrategyEditor extends LitElement {
     `;
   }
 
-  private renderSelect(label: string, key: keyof YeelightDashboardConfig, options: string[]): TemplateResult {
+  private renderSelect(labelKey: TranslationKey, key: keyof YeelightDashboardConfig, options: string[]): TemplateResult {
     const current = String(this.config[key]);
     return html`
       <label>
-        <span>${label}</span>
+        <span>${localize(this.hass, labelKey)}</span>
         <select @change=${(event: Event) => this.updateValue(key, (event.target as HTMLSelectElement).value)}>
-          ${options.map((option) => html`<option value=${option} ?selected=${option === current}>${option}</option>`)}
+          ${options.map((option) => html`<option value=${option} ?selected=${option === current}>${this.optionLabel(key, option)}</option>`)}
         </select>
       </label>
     `;
@@ -144,11 +66,7 @@ export class YeelightDashboardStrategyEditor extends LitElement {
 
   private renderThemeNotice(): TemplateResult {
     if (themeAvailable(this.hass, this.config.theme) !== false) return html``;
-    return html`
-      <div class="notice">
-        Yeelight Themes are not currently exposed by Home Assistant. The dashboard will keep working with HA theme fallbacks.
-      </div>
-    `;
+    return html` <div class="notice">${localize(this.hass, "editor.strategy.theme_missing")}</div> `;
   }
 
   private updateValue(key: keyof YeelightDashboardConfig, value: string): void {
@@ -171,7 +89,7 @@ export class YeelightDashboardStrategyEditor extends LitElement {
     const selected = new Set(this.config.selected_areas);
     return html`
       <fieldset>
-        <legend>Selected Areas</legend>
+        <legend>${localize(this.hass, "editor.strategy.selected_areas")}</legend>
         <div class="check-grid">
           ${areas.map(
             (area) => html`
@@ -193,7 +111,7 @@ export class YeelightDashboardStrategyEditor extends LitElement {
   private renderViews(): TemplateResult {
     return html`
       <fieldset>
-        <legend>Views</legend>
+        <legend>${localize(this.hass, "editor.strategy.views")}</legend>
         <div class="check-grid">
           ${VIEW_OPTIONS.map(
             (view) => html`
@@ -203,7 +121,7 @@ export class YeelightDashboardStrategyEditor extends LitElement {
                   .checked=${this.config.views[view] !== false}
                   @change=${(event: Event) => this.updateView(view, (event.target as HTMLInputElement).checked)}
                 />
-                <span>${view}</span>
+                <span>${localize(this.hass, `editor.strategy.view.${view}` as TranslationKey)}</span>
               </label>
             `
           )}
@@ -215,11 +133,11 @@ export class YeelightDashboardStrategyEditor extends LitElement {
   private renderPreferences(): TemplateResult {
     return html`
       <fieldset>
-        <legend>Preferences</legend>
-        ${this.renderPreferenceSelect("Density", "density", ["comfortable", "compact"])}
-        ${this.renderPreferenceNumber("Scene limit", "scene_limit", 1, 24)}
-        ${this.renderPreferenceCheckbox("Show offline", "show_offline")}
-        ${this.renderPreferenceCheckbox("Show non-Yeelight", "show_non_yeelight_entities")}
+        <legend>${localize(this.hass, "editor.strategy.preferences")}</legend>
+        ${this.renderPreferenceSelect("editor.density", "density", ["comfortable", "compact"])}
+        ${this.renderPreferenceNumber("editor.strategy.scene_limit", "scene_limit", 1, 24)}
+        ${this.renderPreferenceCheckbox("editor.strategy.show_offline", "show_offline")}
+        ${this.renderPreferenceCheckbox("editor.strategy.show_non_yeelight", "show_non_yeelight_entities")}
       </fieldset>
     `;
   }
@@ -228,35 +146,43 @@ export class YeelightDashboardStrategyEditor extends LitElement {
     if (this.config.layout_mode !== "canvas") return html``;
     return html`
       <fieldset>
-        <legend>Layout overrides</legend>
+        <legend>${localize(this.hass, "editor.strategy.layout_overrides")}</legend>
         <label>
-          <span>Managed Canvas JSON</span>
+          <span>${localize(this.hass, "editor.strategy.managed_canvas_json")}</span>
           <textarea
             .value=${JSON.stringify(this.config.layout_overrides || {}, null, 2)}
             @change=${(event: Event) => this.updateLayoutOverrides((event.target as HTMLTextAreaElement).value)}
           ></textarea>
         </label>
-        ${this.layoutError ? html`<span class="error">${this.layoutError}</span>` : html`<span>Use stable card keys exported by Canvas edit mode.</span>`}
+        <div class="inline-actions">
+          <button type="button" @click=${this.importLayoutOverridesFromClipboard}>${localize(this.hass, "editor.strategy.import_canvas_layout")}</button>
+          <button type="button" @click=${this.clearLayoutOverrides}>${localize(this.hass, "editor.strategy.reset_layout")}</button>
+        </div>
+        ${this.layoutError
+          ? html`<span class="error">${this.layoutError}</span>`
+          : this.layoutMessage
+            ? html`<span class="success">${this.layoutMessage}</span>`
+            : html`<span>${localize(this.hass, "editor.strategy.layout_help")}</span>`}
       </fieldset>
     `;
   }
 
-  private renderPreferenceSelect(keyLabel: string, key: keyof YeelightDashboardConfig["preferences"], options: string[]): TemplateResult {
+  private renderPreferenceSelect(labelKey: TranslationKey, key: keyof YeelightDashboardConfig["preferences"], options: string[]): TemplateResult {
     const current = String(this.config.preferences[key]);
     return html`
       <label>
-        <span>${keyLabel}</span>
+        <span>${localize(this.hass, labelKey)}</span>
         <select @change=${(event: Event) => this.updatePreference(key, (event.target as HTMLSelectElement).value)}>
-          ${options.map((option) => html`<option value=${option} ?selected=${option === current}>${option}</option>`)}
+          ${options.map((option) => html`<option value=${option} ?selected=${option === current}>${this.optionLabel(key, option)}</option>`)}
         </select>
       </label>
     `;
   }
 
-  private renderPreferenceNumber(keyLabel: string, key: keyof YeelightDashboardConfig["preferences"], min: number, max: number): TemplateResult {
+  private renderPreferenceNumber(labelKey: TranslationKey, key: keyof YeelightDashboardConfig["preferences"], min: number, max: number): TemplateResult {
     return html`
       <label>
-        <span>${keyLabel}</span>
+        <span>${localize(this.hass, labelKey)}</span>
         <input
           type="number"
           min=${min}
@@ -268,7 +194,7 @@ export class YeelightDashboardStrategyEditor extends LitElement {
     `;
   }
 
-  private renderPreferenceCheckbox(keyLabel: string, key: keyof YeelightDashboardConfig["preferences"]): TemplateResult {
+  private renderPreferenceCheckbox(labelKey: TranslationKey, key: keyof YeelightDashboardConfig["preferences"]): TemplateResult {
     return html`
       <label class="checkbox">
         <input
@@ -276,9 +202,22 @@ export class YeelightDashboardStrategyEditor extends LitElement {
           .checked=${Boolean(this.config.preferences[key])}
           @change=${(event: Event) => this.updatePreference(key, (event.target as HTMLInputElement).checked)}
         />
-        <span>${keyLabel}</span>
+        <span>${localize(this.hass, labelKey)}</span>
       </label>
     `;
+  }
+
+  private optionLabel(key: keyof YeelightDashboardConfig | keyof YeelightDashboardConfig["preferences"], option: string): string {
+    if (key === "theme") return option;
+    const map: Partial<Record<string, string>> = {
+      profile: `editor.strategy.profile.${option}`,
+      scope: `editor.strategy.scope.${option}`,
+      layout_mode: `editor.strategy.layout.${option}`,
+      area_mode: `editor.strategy.area.${option}`,
+      density: `editor.density.${option}`
+    };
+    const keyPath = map[String(key)];
+    return keyPath ? localize(this.hass, keyPath as TranslationKey) : option;
   }
 
   private updateArea(areaId: string, enabled: boolean): void {
@@ -300,18 +239,47 @@ export class YeelightDashboardStrategyEditor extends LitElement {
     const trimmed = value.trim();
     if (!trimmed) {
       this.layoutError = "";
+      this.layoutMessage = "";
       this.commit({ ...this.config, layout_overrides: undefined });
       return;
     }
     try {
-      const parsed = JSON.parse(trimmed) as DashboardLayoutOverrides;
+      const parsed = parseLayoutOverrides(trimmed);
       this.layoutError = "";
+      this.layoutMessage = "";
       this.commit({ ...this.config, layout_overrides: parsed });
     } catch {
-      this.layoutError = "Invalid JSON";
+      this.layoutError = localize(this.hass, "editor.strategy.invalid_json");
+      this.layoutMessage = "";
       this.requestUpdate();
     }
   }
+
+  private importLayoutOverridesFromClipboard = async (): Promise<void> => {
+    try {
+      const text = await navigator.clipboard?.readText();
+      if (!text?.trim()) {
+        this.layoutError = localize(this.hass, "editor.strategy.clipboard_empty");
+        this.layoutMessage = "";
+        this.requestUpdate();
+        return;
+      }
+      const parsed = parseLayoutOverrides(text);
+      this.layoutError = "";
+      this.layoutMessage = localize(this.hass, "editor.strategy.layout_imported");
+      this.commit({ ...this.config, layout_overrides: parsed });
+    } catch {
+      this.layoutError = localize(this.hass, "editor.strategy.layout_import_failed");
+      this.layoutMessage = "";
+      this.requestUpdate();
+    }
+  };
+
+  private clearLayoutOverrides = (): void => {
+    this.layoutError = "";
+    this.layoutMessage = localize(this.hass, "editor.strategy.layout_reset");
+    this.commit({ ...this.config, layout_overrides: undefined });
+  };
 
   private commit(config: Partial<YeelightDashboardConfig>): void {
     this.config = normalizeConfig(config);
@@ -337,4 +305,20 @@ function themeAvailable(hass: HomeAssistant | undefined, theme: string): boolean
   const themes = hass?.themes?.themes;
   if (!themes || typeof themes !== "object" || !Object.keys(themes).length) return undefined;
   return Object.prototype.hasOwnProperty.call(themes, theme);
+}
+
+function parseLayoutOverrides(value: string): DashboardLayoutOverrides {
+  const parsed = JSON.parse(value) as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Invalid layout overrides");
+  }
+  const object = parsed as Record<string, unknown>;
+  if (object.layout_overrides && typeof object.layout_overrides === "object" && !Array.isArray(object.layout_overrides)) {
+    return object.layout_overrides as DashboardLayoutOverrides;
+  }
+  const strategy = object.strategy as Record<string, unknown> | undefined;
+  if (strategy?.layout_overrides && typeof strategy.layout_overrides === "object" && !Array.isArray(strategy.layout_overrides)) {
+    return strategy.layout_overrides as DashboardLayoutOverrides;
+  }
+  return object as DashboardLayoutOverrides;
 }

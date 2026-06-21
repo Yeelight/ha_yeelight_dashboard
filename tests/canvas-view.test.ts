@@ -61,6 +61,11 @@ describe("canvas view", () => {
       key: "overview.light",
       override: { x: 4, y: 0, w: 6, h: 2 }
     });
+    await view.updateComplete;
+    const snippet = view.shadowRoot.querySelector("textarea")?.value || "";
+    expect(snippet).toContain('"layout_mode": "canvas"');
+    expect(snippet).toContain('"layout_overrides"');
+    expect(snippet).toContain('"overview.light"');
   });
 
   it("supports pointer drag and resize in layout studio", async () => {

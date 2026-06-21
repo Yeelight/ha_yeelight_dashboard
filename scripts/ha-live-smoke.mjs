@@ -50,6 +50,7 @@ try {
     const canvas = await strategy.generate({ layout_mode: "canvas" }, hass);
     const overview = standard.views?.find((view) => view.path === "overview");
     const canvasOverview = canvas.views?.find((view) => view.path === "overview");
+    const editorSmoke = await validateCardEditor(hass);
     window.__renderYeelightDashboardPreview(standard, hass);
 
     return {
@@ -68,10 +69,49 @@ try {
       canvasType: canvasOverview?.type,
       hasCanvasCards: Boolean(canvasOverview?.cards?.length),
       firstLayout: canvasOverview?.cards?.[0]?.view_layout,
-      registryEntities: Object.keys(hass.states || {}).length
+      registryEntities: Object.keys(hass.states || {}).length,
+      editorSmoke
     };
+
+    async function validateCardEditor(currentHass) {
+      const meta = window.customCards?.find((item) => item.type === "yeelight-dashboard-light-card");
+      const editor = meta?.getConfigElement?.();
+      if (!editor) return { ok: false, reason: "card editor metadata missing" };
+      editor.hass = currentHass;
+      editor.setConfig?.({
+        type: "custom:yeelight-dashboard-light-card",
+        title: "灯光概览",
+        entities: Object.keys(currentHass.states || {}).slice(0, 24)
+      });
+      document.body.append(editor);
+      await editor.updateComplete;
+      const forms = [...(editor.shadowRoot?.querySelectorAll("ha-form") || [])];
+      const names = forms.flatMap((form) => flatten(form.schema || []).map((item) => item.name));
+      const visibleSelectedRows = editor.shadowRoot?.querySelectorAll(".entity-row").length ?? 0;
+      const entityPicker = editor.shadowRoot?.querySelector("#entity-picker");
+      editor.remove();
+      return {
+        ok: Boolean(
+          forms.length === 3 &&
+            ["type", "title", "subtitle", "item_limit", "grid_columns", "grid_rows", "density", "variant", "show_metrics", "show_actions", "show_area_summaries"].every((name) =>
+              names.includes(name)
+            ) &&
+            !names.includes("entities") &&
+            entityPicker &&
+            visibleSelectedRows <= 5
+        ),
+        formCount: forms.length,
+        names,
+        hasEntityPicker: Boolean(entityPicker),
+        visibleSelectedRows
+      };
+    }
+
+    function flatten(schema) {
+      return schema.flatMap((item) => (Array.isArray(item.schema) ? flatten(item.schema) : [item]));
+    }
   });
-  if (!result.ok || !result.communityRegistered || result.overviewType !== "sections" || result.canvasType !== "custom:yeelight-dashboard-canvas-view") {
+  if (!result.ok || !result.communityRegistered || !result.editorSmoke?.ok || result.overviewType !== "sections" || result.canvasType !== "custom:yeelight-dashboard-canvas-view") {
     throw new Error(`live dashboard smoke failed: ${JSON.stringify(result)}`);
   }
   if (screenshotPath) {

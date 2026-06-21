@@ -2,20 +2,19 @@ import { LitElement, html, nothing, type TemplateResult } from "lit";
 
 import { localize, stateText } from "../i18n";
 import { summarizeEntities } from "./entity-model";
-import { executeEntityAction, fireMoreInfo, turnOffLights } from "./actions";
-import { gridOptionsForKind } from "./grid-options";
+import { actionFor, actionLabel, executeEntityAction, fireMoreInfo, turnOffLights, type EntityAction } from "./actions";
+import { gridOptionsForConfig } from "./grid-options";
+import { iconForKind, metricsFor } from "./card-meta";
+import { normalizeDashboardCardConfig, visibleLimit, type NormalizedDashboardCardConfig } from "./config";
+import { renderDevicesBoard, renderEnvironmentBoard, renderRoutinesBoard } from "./internal-card-product";
 import type {
   DashboardAreaSummary,
-  DashboardCardConfig,
   DashboardCardKind,
   DashboardCardSummary,
   HomeAssistant,
   NormalizedEntity
 } from "./types";
 import { dashboardCardStyles } from "./styles";
-
-type Metric = { value: number; label: string; tone: "neutral" | "hot" | "ok" | "warn" };
-type EntityAction = "toggle" | "activate" | "press";
 
 export type { DashboardCardKind } from "./types";
 
@@ -28,16 +27,12 @@ export function createDashboardCardClass(kind: DashboardCardKind): typeof Yeelig
 export class YeelightDashboardBaseCard extends LitElement {
   static override styles = dashboardCardStyles;
   protected kind: DashboardCardKind = "hero";
-  protected config: DashboardCardConfig = { type: "custom:yeelight-dashboard-hero-card", entities: [] };
+  protected config: NormalizedDashboardCardConfig = normalizeDashboardCardConfig({ type: "custom:yeelight-dashboard-hero-card" });
   private _hass?: HomeAssistant;
   private feedback = "";
 
-  setConfig(config: DashboardCardConfig): void {
-    this.config = {
-      ...config,
-      entities: Array.isArray(config.entities) ? config.entities : [],
-      area_summaries: Array.isArray(config.area_summaries) ? config.area_summaries : []
-    };
+  setConfig(config: Partial<NormalizedDashboardCardConfig>): void {
+    this.config = normalizeDashboardCardConfig(config);
   }
 
   set hass(value: HomeAssistant | undefined) {
@@ -50,11 +45,11 @@ export class YeelightDashboardBaseCard extends LitElement {
   }
 
   getCardSize(): number {
-    return gridOptionsForKind(this.kind).rows;
+    return this.gridOptions().rows;
   }
 
   getGridOptions(): Record<string, number> {
-    return gridOptionsForKind(this.kind);
+    return this.gridOptions();
   }
 
   static getConfigElement(): HTMLElement {
@@ -63,11 +58,11 @@ export class YeelightDashboardBaseCard extends LitElement {
 
   protected override render(): TemplateResult {
     const summary = summarizeEntities(this.hass, this.config.entities || []);
-    const areas = this.areaSummaries();
+    const areas = this.config.show_area_summaries ? this.areaSummaries() : [];
     const title = this.config.title || localize(this.hass, `card.${this.kind}.title`);
     return html`
       <ha-card>
-        <div class=${`card ${this.kind}`} aria-label=${title}>
+        <div class=${`card ${this.kind} density-${this.config.density} variant-${this.config.variant}`} aria-label=${title}>
           ${this.renderHeader(title)} ${this.renderMetrics(summary, areas)} ${this.renderBody(summary, areas)}
           ${this.feedback ? html`<div class="feedback" role="status">${this.feedback}</div>` : nothing}
         </div>
@@ -82,17 +77,18 @@ export class YeelightDashboardBaseCard extends LitElement {
           <span class="header-icon"><ha-icon .icon=${iconForKind(this.kind)}></ha-icon></span>
           <div>
             <h2 class="title">${title}</h2>
-            <p class="subtitle">${localize(this.hass, `card.${this.kind}.subtitle`)}</p>
+            <p class="subtitle">${this.config.subtitle || localize(this.hass, `card.${this.kind}.subtitle`)}</p>
           </div>
         </div>
-        ${this.kind === "hero" || this.kind === "light"
+        ${this.config.show_actions && (this.kind === "hero" || this.kind === "light")
           ? html`<button class="primary-action" @click=${this.turnOffAllLights}>${localize(this.hass, "action.turn_off_all")}</button>`
           : nothing}
       </header>
     `;
   }
 
-  private renderMetrics(summary: DashboardCardSummary, areas: DashboardAreaSummary[]): TemplateResult {
+  private renderMetrics(summary: DashboardCardSummary, areas: DashboardAreaSummary[]): TemplateResult | typeof nothing {
+    if (!this.config.show_metrics) return nothing;
     const metrics = metricsFor(this.hass, this.kind, summary, areas);
     return html`
       <div class=${`metrics count-${metrics.length}`}>
@@ -107,14 +103,20 @@ export class YeelightDashboardBaseCard extends LitElement {
       return html`<div class="empty">${localize(this.hass, this.kind === "light" ? "empty.no_lights" : "empty.no_entities")}</div>`;
     }
     if (this.kind === "hero") return this.renderHero(summary, areas);
+    if (this.kind === "status") return this.renderStatus(summary, areas);
+    if (this.kind === "notice") return this.renderNotice(summary);
     if (this.kind === "light") return this.renderLights(summary);
     if (this.kind === "rooms") return this.renderRooms(areas);
     if (this.kind === "room") return this.renderRoom(summary, areas[0]);
-    if (this.kind === "routines") return this.renderRoutines(summary);
+    if (this.kind === "devices") return renderDevicesBoard(this, summary, areas, this.limit(5), this.config.show_actions, (area) => this.renderAreaPill(area));
+    if (this.kind === "routines") return renderRoutinesBoard(this, summary, this.limit(5), this.config.show_actions, (entity) => this.renderActionTile(entity));
+    if (this.kind === "environment") return renderEnvironmentBoard(this, summary, this.limit(6));
+    if (this.kind === "ecosystem") return this.renderEcosystem(summary, areas);
     return this.renderHealth(summary);
   }
 
   private renderHero(summary: DashboardCardSummary, areas: DashboardAreaSummary[]): TemplateResult {
+    const limit = this.limit(4);
     const headline = summary.activeLights.length
       ? `${summary.activeLights.length} ${localize(this.hass, "metric.lights_on")}`
       : localize(this.hass, "empty.no_active_lights");
@@ -125,15 +127,46 @@ export class YeelightDashboardBaseCard extends LitElement {
           <strong>${headline}</strong>
           <span>${summary.controllable.length} ${localize(this.hass, "metric.controls")} · ${summary.routines.length} ${localize(this.hass, "metric.routines")}</span>
         </div>
-        ${areas.length ? html`<div class="area-strip">${areas.slice(0, 4).map((area) => this.renderAreaPill(area))}</div>` : nothing}
-        ${summary.routines.length ? html`<div class="quick-grid hero-actions">${summary.routines.slice(0, 1).map((entity) => this.renderActionTile(entity))}</div>` : nothing}
+        ${areas.length ? html`<div class="area-strip">${areas.slice(0, limit).map((area) => this.renderAreaPill(area))}</div>` : nothing}
+        ${summary.routines.length ? html`<div class="quick-grid hero-actions">${summary.routines.slice(0, Math.min(limit, 4)).map((entity) => this.renderActionTile(entity))}</div>` : nothing}
       </div>
+    `;
+  }
+
+  private renderStatus(summary: DashboardCardSummary, areas: DashboardAreaSummary[]): TemplateResult {
+    const topAreas = areas.slice(0, this.limit(3));
+    const controlGroups = [
+      { icon: "mdi:lightbulb-group", label: localize(this.hass, "metric.lights"), value: summary.lights.length },
+      { icon: "mdi:gesture-tap-button", label: localize(this.hass, "metric.routines"), value: summary.routines.length },
+      { icon: "mdi:tune-variant", label: localize(this.hass, "metric.controls"), value: summary.controllable.length }
+    ];
+    return html`
+      <div class="status-board">
+        <div class="status-groups">${controlGroups.map((group) => this.renderStatusGroup(group.icon, group.label, group.value))}</div>
+        ${topAreas.length ? html`<div class="area-strip compact-strip">${topAreas.map((area) => this.renderAreaPill(area))}</div>` : nothing}
+      </div>
+    `;
+  }
+
+  private renderNotice(summary: DashboardCardSummary): TemplateResult {
+    const notices = summary.issues.slice(0, this.limit(3));
+    if (!notices.length) {
+      return html`
+        <div class="health-ok">
+          <ha-icon icon="mdi:check-circle-outline"></ha-icon>
+          <span>${localize(this.hass, "empty.no_issues")}</span>
+        </div>
+      `;
+    }
+    return html`
+      <div class="section-label">${localize(this.hass, "label.issue_list")}</div>
+      <div class="entity-list compact">${notices.map((entity) => this.renderEntityRow(entity))}</div>
     `;
   }
 
   private renderLights(summary: DashboardCardSummary): TemplateResult {
     if (!summary.lights.length) return html`<div class="empty">${localize(this.hass, "empty.no_lights")}</div>`;
-    const lights = [...summary.activeLights, ...summary.lights.filter((entity) => entity.state !== "on")].slice(0, 2);
+    const lights = [...summary.activeLights, ...summary.lights.filter((entity) => entity.state !== "on")].slice(0, this.limit(2));
     return html`
       <div class="section-label">${localize(this.hass, "label.active_lights")}</div>
       <div class="tile-grid">${lights.map((entity) => this.renderEntityTile(entity))}</div>
@@ -144,12 +177,12 @@ export class YeelightDashboardBaseCard extends LitElement {
     if (!areas.length) return html`<div class="empty">${localize(this.hass, "empty.no_rooms")}</div>`;
     return html`
       <div class="section-label">${localize(this.hass, "label.favorite_rooms")}</div>
-      <div class="room-grid">${areas.slice(0, 2).map((area) => this.renderAreaCard(area))}</div>
+      <div class="room-grid">${areas.slice(0, this.limit(2)).map((area) => this.renderAreaCard(area))}</div>
     `;
   }
 
   private renderRoom(summary: DashboardCardSummary, area?: DashboardAreaSummary): TemplateResult {
-    const featured = [...summary.activeLights, ...summary.routines, ...summary.controllable.filter((entity) => entity.domain !== "light")].slice(0, 3);
+    const featured = [...summary.activeLights, ...summary.routines, ...summary.controllable.filter((entity) => entity.domain !== "light")].slice(0, this.limit(3));
     return html`
       ${area ? html`<div class="room-hero">${this.renderAreaPill(area)}</div>` : nothing}
       ${featured.length
@@ -158,16 +191,23 @@ export class YeelightDashboardBaseCard extends LitElement {
     `;
   }
 
-  private renderRoutines(summary: DashboardCardSummary): TemplateResult {
-    if (!summary.routines.length) return html`<div class="empty">${localize(this.hass, "empty.no_routines")}</div>`;
+  private renderEcosystem(summary: DashboardCardSummary, areas: DashboardAreaSummary[]): TemplateResult {
+    const groups = [
+      { icon: "mdi:home-group", label: localize(this.hass, "metric.rooms"), value: areas.length },
+      { icon: "mdi:checkbox-marked-circle-outline", label: localize(this.hass, "metric.online"), value: summary.online.length },
+      { icon: "mdi:alert-circle-outline", label: localize(this.hass, "metric.issues"), value: summary.issues.length }
+    ];
+    const focusAreas = areas.slice(0, this.limit(2));
     return html`
-      <div class="section-label">${localize(this.hass, "label.quick_actions")}</div>
-      <div class="quick-grid">${summary.routines.slice(0, 2).map((entity) => this.renderActionTile(entity))}</div>
+      <div class="ecosystem-board">
+        <div class="status-groups">${groups.map((group) => this.renderStatusGroup(group.icon, group.label, group.value))}</div>
+        ${focusAreas.length ? html`<div class="room-grid">${focusAreas.map((area) => this.renderAreaCard(area))}</div>` : nothing}
+      </div>
     `;
   }
 
   private renderHealth(summary: DashboardCardSummary): TemplateResult {
-    const issues = summary.issues.slice(0, 2);
+    const issues = summary.issues.slice(0, this.limit(2));
     if (!issues.length) {
       return html`
         <div class="health-ok">
@@ -179,6 +219,16 @@ export class YeelightDashboardBaseCard extends LitElement {
     return html`
       <div class="section-label">${localize(this.hass, "label.issue_list")}</div>
       <div class="entity-list compact">${issues.map((entity) => this.renderEntityRow(entity))}</div>
+    `;
+  }
+
+  private renderStatusGroup(icon: string, label: string, value: number): TemplateResult {
+    return html`
+      <div class="status-group">
+        <ha-icon .icon=${icon}></ha-icon>
+        <strong>${value}</strong>
+        <span>${label}</span>
+      </div>
     `;
   }
 
@@ -209,7 +259,7 @@ export class YeelightDashboardBaseCard extends LitElement {
   }
 
   private renderEntityTile(entity: NormalizedEntity): TemplateResult {
-    const action = actionFor(entity);
+    const action = this.config.show_actions ? actionFor(entity) : "";
     return html`
       <div class=${`entity-tile ${entity.state === "on" ? "active" : ""} ${entity.available ? "" : "muted"}`}>
         <button class="tile-icon" aria-label=${localize(this.hass, "action.more_info")} @click=${() => fireMoreInfo(this, entity.entityId)}>
@@ -220,17 +270,17 @@ export class YeelightDashboardBaseCard extends LitElement {
           <span>${stateText(this.hass, entity.state)}</span>
         </div>
         ${action
-          ? html`<button class="chip-action" ?disabled=${!entity.available || entity.readOnly} @click=${() => this.runAction(entity, action)}>${actionLabel(this.hass, entity, action)}</button>`
+          ? html`<button class="chip-action" ?disabled=${!entity.available || entity.readOnly} @click=${() => this.runEntityAction(entity, action)}>${actionLabel(this.hass, entity, action)}</button>`
           : nothing}
       </div>
     `;
   }
 
   private renderActionTile(entity: NormalizedEntity): TemplateResult {
-    const action = actionFor(entity);
-    if (!action) return this.renderEntityTile(entity);
+    const action = this.config.show_actions ? actionFor(entity) : "";
+    if (!action) return this.renderEntityRow(entity);
     return html`
-      <button class="action-tile" ?disabled=${!entity.available || entity.readOnly} @click=${() => this.runAction(entity, action)}>
+      <button class="action-tile" ?disabled=${!entity.available || entity.readOnly} @click=${() => this.runEntityAction(entity, action)}>
         <ha-icon .icon=${entity.icon}></ha-icon>
         <strong>${entity.name}</strong>
         <span>${actionLabel(this.hass, entity, action)}</span>
@@ -239,7 +289,7 @@ export class YeelightDashboardBaseCard extends LitElement {
   }
 
   private renderEntityRow(entity: NormalizedEntity): TemplateResult {
-    const action = actionFor(entity);
+    const action = this.config.show_actions ? actionFor(entity) : "";
     return html`
       <div class=${`entity-row ${entity.available ? "" : "muted"}`}>
         <button class="icon-button" aria-label=${localize(this.hass, "action.more_info")} @click=${() => fireMoreInfo(this, entity.entityId)}>
@@ -250,7 +300,7 @@ export class YeelightDashboardBaseCard extends LitElement {
           <span>${stateText(this.hass, entity.state)}</span>
         </div>
         ${action
-          ? html`<button class="text-action" ?disabled=${!entity.available || entity.readOnly} @click=${() => this.runAction(entity, action)}>${actionLabel(this.hass, entity, action)}</button>`
+          ? html`<button class="text-action" ?disabled=${!entity.available || entity.readOnly} @click=${() => this.runEntityAction(entity, action)}>${actionLabel(this.hass, entity, action)}</button>`
           : nothing}
       </div>
     `;
@@ -260,13 +310,21 @@ export class YeelightDashboardBaseCard extends LitElement {
     return Array.isArray(this.config.area_summaries) ? this.config.area_summaries : [];
   }
 
+  private limit(fallback: number): number {
+    return visibleLimit(this.config, fallback);
+  }
+
+  private gridOptions(): Record<string, number> {
+    return gridOptionsForConfig(this.kind, this.config.grid_options);
+  }
+
   private turnOffAllLights = async (): Promise<void> => {
     await this.withFeedback(async () => {
       await turnOffLights(this.hass, this.config.entities || []);
     });
   };
 
-  private async runAction(entity: NormalizedEntity, action: EntityAction): Promise<void> {
+  async runEntityAction(entity: NormalizedEntity, action: EntityAction): Promise<void> {
     await this.withFeedback(() => executeEntityAction(this.hass, entity.entityId, action));
   }
 
@@ -279,69 +337,4 @@ export class YeelightDashboardBaseCard extends LitElement {
     }
     this.requestUpdate();
   }
-}
-
-function actionFor(entity: NormalizedEntity): EntityAction | "" {
-  if (["light", "switch", "fan"].includes(entity.domain)) return "toggle";
-  if (["scene", "script", "automation"].includes(entity.domain)) return "activate";
-  if (entity.domain === "button") return "press";
-  return "";
-}
-
-function actionLabel(hass: HomeAssistant | undefined, entity: NormalizedEntity, action: EntityAction): string {
-  if (action === "activate") return localize(hass, "action.activate");
-  if (action === "press") return localize(hass, "action.press");
-  return entity.state === "on" ? localize(hass, "action.turn_off") : localize(hass, "action.turn_on");
-}
-
-function iconForKind(kind: DashboardCardKind): string {
-  return (
-    {
-      hero: "mdi:home-lightbulb",
-      light: "mdi:lightbulb-group",
-      rooms: "mdi:floor-plan",
-      room: "mdi:home-variant",
-      routines: "mdi:movie-open-play",
-      health: "mdi:heart-pulse"
-    }[kind] ?? "mdi:view-dashboard"
-  );
-}
-
-function metricsFor(hass: HomeAssistant | undefined, kind: DashboardCardKind, summary: DashboardCardSummary, areas: DashboardAreaSummary[]): Metric[] {
-  const areaIssues = areas.reduce((count, area) => count + area.issueCount, 0);
-  const totalAreaEntities = areas.reduce((count, area) => count + area.entityCount, 0);
-  if (kind === "health") {
-    return [
-      { value: summary.issues.length, label: localize(hass, "metric.issues"), tone: summary.issues.length ? "warn" : "ok" },
-      { value: summary.unknown.length, label: localize(hass, "metric.unknown"), tone: "neutral" },
-      { value: summary.entities.length, label: localize(hass, "metric.entities"), tone: "neutral" }
-    ];
-  }
-  if (kind === "rooms" || kind === "room") {
-    return [
-      { value: areas.length, label: localize(hass, "metric.rooms"), tone: "neutral" },
-      { value: totalAreaEntities || summary.entities.length, label: localize(hass, "metric.entities"), tone: "ok" },
-      { value: areaIssues || summary.issues.length, label: localize(hass, "metric.issues"), tone: areaIssues || summary.issues.length ? "warn" : "neutral" }
-    ];
-  }
-  if (kind === "routines") {
-    return [
-      { value: summary.routines.length, label: localize(hass, "metric.routines"), tone: "ok" },
-      { value: summary.entities.filter((entity) => entity.domain === "scene").length, label: localize(hass, "metric.scenes"), tone: "neutral" },
-      { value: summary.entities.filter((entity) => entity.domain === "button").length, label: localize(hass, "action.press"), tone: "neutral" }
-    ];
-  }
-  if (kind === "hero") {
-    return [
-      { value: summary.entities.length, label: localize(hass, "metric.entities"), tone: "neutral" },
-      { value: summary.activeLights.length, label: localize(hass, "metric.lights_on"), tone: "hot" },
-      { value: areas.length, label: localize(hass, "metric.rooms"), tone: "ok" },
-      { value: summary.issues.length, label: localize(hass, "metric.issues"), tone: summary.issues.length ? "warn" : "neutral" }
-    ];
-  }
-  return [
-    { value: summary.activeLights.length, label: localize(hass, "metric.lights_on"), tone: "hot" },
-    { value: summary.lights.length, label: localize(hass, "metric.lights"), tone: "neutral" },
-    { value: summary.controllable.length, label: localize(hass, "metric.controls"), tone: "ok" }
-  ];
 }

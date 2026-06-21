@@ -2,17 +2,18 @@ import type { DashboardContext } from "../model/context";
 import { buildCanvasCards, canvasStyle } from "../layout/canvas-layout";
 import type { CanvasLayoutOverride } from "../layout/layout-types";
 import { buildRecipeSections, type RecipeTarget } from "../recipes/recipes";
+import { localize, type TranslationKey } from "../i18n";
 import type { LovelaceViewConfig } from "../types";
 import { CANVAS_VIEW_TAG } from "./canvas-view";
 
-const VIEW_META: Record<RecipeTarget, { title: string; path: string; icon: string }> = {
-  overview: { title: "Overview", path: "overview", icon: "mdi:view-dashboard" },
-  lighting: { title: "Lighting", path: "lighting", icon: "mdi:lightbulb-group" },
-  areas: { title: "Areas", path: "areas", icon: "mdi:floor-plan" },
-  routines: { title: "Scenes", path: "scenes", icon: "mdi:movie-open-play" },
-  environment: { title: "Environment", path: "environment", icon: "mdi:thermometer" },
-  media: { title: "Media", path: "media", icon: "mdi:play-network" },
-  health: { title: "Health", path: "health", icon: "mdi:heart-pulse" }
+const VIEW_META: Record<RecipeTarget, { titleKey: TranslationKey; path: string; icon: string }> = {
+  overview: { titleKey: "view.overview", path: "overview", icon: "mdi:view-dashboard" },
+  lighting: { titleKey: "view.lighting", path: "lighting", icon: "mdi:lightbulb-group" },
+  areas: { titleKey: "view.areas", path: "areas", icon: "mdi:floor-plan" },
+  routines: { titleKey: "view.routines", path: "scenes", icon: "mdi:movie-open-play" },
+  environment: { titleKey: "view.environment", path: "environment", icon: "mdi:thermometer" },
+  media: { titleKey: "view.media", path: "media", icon: "mdi:play-network" },
+  health: { titleKey: "view.health", path: "health", icon: "mdi:heart-pulse" }
 };
 
 export function buildSectionsViews(context: DashboardContext): LovelaceViewConfig[] {
@@ -22,9 +23,12 @@ export function buildSectionsViews(context: DashboardContext): LovelaceViewConfi
     .map((target) => {
       const meta = VIEW_META[target];
       const sections = buildRecipeSections(target, context);
+      const title = localize(context.hass, meta.titleKey);
       if (context.config.layout_mode === "canvas") {
         return {
-          ...meta,
+          title,
+          path: meta.path,
+          icon: meta.icon,
           type: `custom:${CANVAS_VIEW_TAG}`,
           theme: context.config.theme,
           layout_studio: true,
@@ -35,10 +39,12 @@ export function buildSectionsViews(context: DashboardContext): LovelaceViewConfi
         };
       }
       return {
-        ...meta,
+        title,
+        path: meta.path,
+        icon: meta.icon,
         type: "sections",
         theme: context.config.theme,
-        sections: sections.length ? sections : [{ type: "grid", title: meta.title, cards: [{ type: "markdown", content: `### ${meta.title}\nNo matching entities yet.` }] }]
+        sections: sections.length ? sections : [{ type: "grid", title, cards: [{ type: "markdown", content: `### ${title}\n${localize(context.hass, "empty.no_entities")}` }] }]
       };
     });
 }

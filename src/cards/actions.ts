@@ -3,6 +3,8 @@ import { localize } from "../i18n";
 import { normalizeEntity } from "./entity-model";
 import type { NormalizedEntity } from "./types";
 
+export type EntityAction = "toggle" | "activate" | "press";
+
 const TOGGLE_DOMAINS = new Set(["light", "switch", "fan"]);
 
 export function fireMoreInfo(host: HTMLElement, entityId: string): void {
@@ -12,7 +14,7 @@ export function fireMoreInfo(host: HTMLElement, entityId: string): void {
 export async function executeEntityAction(
   hass: HomeAssistant | undefined,
   entityId: string,
-  action: "toggle" | "activate" | "press"
+  action: EntityAction
 ): Promise<void> {
   const entity = ensureWritable(hass, entityId);
   if (action === "toggle") {
@@ -34,6 +36,19 @@ export async function turnOffLights(hass: HomeAssistant | undefined, entityIds: 
     await call(hass, "light", "turn_off", entity.entityId);
   }
   return writableLights.length;
+}
+
+export function actionFor(entity: NormalizedEntity): EntityAction | "" {
+  if (["light", "switch", "fan"].includes(entity.domain)) return "toggle";
+  if (["scene", "script", "automation"].includes(entity.domain)) return "activate";
+  if (entity.domain === "button") return "press";
+  return "";
+}
+
+export function actionLabel(hass: HomeAssistant | undefined, entity: NormalizedEntity, action: EntityAction): string {
+  if (action === "activate") return localize(hass, "action.activate");
+  if (action === "press") return localize(hass, "action.press");
+  return entity.state === "on" ? localize(hass, "action.turn_off") : localize(hass, "action.turn_on");
 }
 
 function ensureWritable(hass: HomeAssistant | undefined, entityId: string): NormalizedEntity {

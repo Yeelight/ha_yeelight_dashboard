@@ -70,7 +70,7 @@
     "legacy_layout": "grid",
     "legacy_order": 30,
     "status": "merge_as_variant",
-    "target": "custom:yeelight-dashboard-scene-strip-card",
+    "target": "custom:yeelight-dashboard-routines-card",
     "variant": "quick",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
@@ -91,7 +91,7 @@
     "legacy_layout": "media",
     "legacy_order": 100,
     "status": "rebuild",
-    "target": "custom:yeelight-dashboard-device-card",
+    "target": "custom:yeelight-dashboard-devices-card",
     "variant": "activity",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
@@ -151,7 +151,7 @@
     "legacy_layout": "list",
     "legacy_order": 32,
     "status": "merge_as_variant",
-    "target": "custom:yeelight-dashboard-scene-strip-card",
+    "target": "custom:yeelight-dashboard-routines-card",
     "variant": "list",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
@@ -316,7 +316,7 @@
     "legacy_layout": "list",
     "legacy_order": 70,
     "status": "rebuild",
-    "target": "custom:yeelight-dashboard-routine-card",
+    "target": "custom:yeelight-dashboard-routines-card",
     "variant": "automations",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
@@ -336,7 +336,7 @@
     "legacy_layout": "list",
     "legacy_order": 102,
     "status": "merge_as_variant",
-    "target": "custom:yeelight-dashboard-device-card",
+    "target": "custom:yeelight-dashboard-devices-card",
     "variant": "list",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
@@ -357,7 +357,7 @@
     "legacy_layout": "grid",
     "legacy_order": 72,
     "status": "merge_as_variant",
-    "target": "custom:yeelight-dashboard-routine-card",
+    "target": "custom:yeelight-dashboard-routines-card",
     "variant": "commands",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
@@ -378,7 +378,7 @@
     "legacy_layout": "compact",
     "legacy_order": 104,
     "status": "merge_as_variant",
-    "target": "custom:yeelight-dashboard-device-card",
+    "target": "custom:yeelight-dashboard-devices-card",
     "variant": "single",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
@@ -398,7 +398,7 @@
     "legacy_layout": "grid",
     "legacy_order": 74,
     "status": "merge_as_variant",
-    "target": "custom:yeelight-dashboard-routine-card",
+    "target": "custom:yeelight-dashboard-routines-card",
     "variant": "scripts",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
@@ -713,7 +713,7 @@
     "legacy_layout": "list",
     "legacy_order": 80,
     "status": "rebuild",
-    "target": "custom:yeelight-dashboard-routine-card",
+    "target": "custom:yeelight-dashboard-routines-card",
     "variant": "schedule",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
@@ -733,8 +733,8 @@
     "legacy_layout": "grid",
     "legacy_order": 90,
     "status": "rebuild",
-    "target": "custom:yeelight-dashboard-health-card",
-    "variant": "ecosystem",
+    "target": "custom:yeelight-dashboard-ecosystem-card",
+    "variant": "standard",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
       "config/www/yeelight/widgets/panel/catalog.js"
@@ -1500,7 +1500,7 @@
     "legacy_layout": "grid",
     "legacy_order": 235,
     "status": "merge_as_variant",
-    "target": "custom:yeelight-dashboard-routine-card",
+    "target": "custom:yeelight-dashboard-routines-card",
     "variant": "button",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
@@ -1521,7 +1521,7 @@
     "legacy_layout": "list",
     "legacy_order": 240,
     "status": "merge_as_variant",
-    "target": "custom:yeelight-dashboard-device-card",
+    "target": "custom:yeelight-dashboard-devices-card",
     "variant": "universal",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
@@ -1542,7 +1542,7 @@
     "legacy_layout": "compact",
     "legacy_order": 250,
     "status": "merge_as_variant",
-    "target": "custom:yeelight-dashboard-routine-card",
+    "target": "custom:yeelight-dashboard-routines-card",
     "variant": "scene-single",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
@@ -1563,7 +1563,7 @@
     "legacy_layout": "compact",
     "legacy_order": 252,
     "status": "merge_as_variant",
-    "target": "custom:yeelight-dashboard-routine-card",
+    "target": "custom:yeelight-dashboard-routines-card",
     "variant": "automation-single",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [
@@ -1584,7 +1584,7 @@
     "legacy_layout": "compact",
     "legacy_order": 254,
     "status": "merge_as_variant",
-    "target": "custom:yeelight-dashboard-routine-card",
+    "target": "custom:yeelight-dashboard-routines-card",
     "variant": "script-single",
     "replacement_kind": "dashboard_internal_card",
     "source_files": [

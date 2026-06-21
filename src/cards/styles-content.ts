@@ -2,7 +2,12 @@ import { css } from "lit";
 
 export const dashboardCardContentStyles = css`
   .hero-board,
-  .entity-list {
+  .entity-list,
+  .status-board,
+  .devices-board,
+  .routine-board,
+  .environment-board,
+  .ecosystem-board {
     display: grid;
     gap: 8px;
   }
@@ -47,7 +52,8 @@ export const dashboardCardContentStyles = css`
   .area-strip,
   .room-grid,
   .tile-grid,
-  .quick-grid {
+  .quick-grid,
+  .status-groups {
     display: grid;
     gap: 8px;
   }
@@ -68,18 +74,95 @@ export const dashboardCardContentStyles = css`
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .routine-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .environment-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .status-groups {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .compact-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .area-pill,
   .area-card,
   .entity-tile,
   .action-tile,
+  .device-row,
+  .routine-hero-action,
+  .environment-primary,
+  .environment-stat,
+  .status-group,
   .health-ok {
     min-width: 0;
     padding: 10px;
   }
 
+  .density-compact .area-pill,
+  .density-compact .area-card,
+  .density-compact .entity-tile,
+  .density-compact .action-tile,
+  .density-compact .device-row,
+  .density-compact .routine-hero-action,
+  .density-compact .environment-primary,
+  .density-compact .environment-stat,
+  .density-compact .status-group,
+  .density-compact .health-ok {
+    padding: 8px;
+  }
+
+  .variant-panel .area-pill,
+  .variant-panel .area-card,
+  .variant-panel .entity-tile,
+  .variant-panel .action-tile,
+  .variant-panel .device-row,
+  .variant-panel .routine-hero-action,
+  .variant-panel .environment-primary,
+  .variant-panel .environment-stat,
+  .variant-panel .status-group,
+  .variant-panel .health-ok {
+    min-height: 84px;
+  }
+
+  .status-group {
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    gap: 4px;
+    min-height: 82px;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--yd-accent) 6%, transparent), transparent 62%),
+      color-mix(in srgb, var(--yd-surface-muted) 86%, transparent);
+  }
+
+  .status-group ha-icon {
+    color: var(--yd-accent);
+  }
+
+  .status-group strong {
+    color: var(--primary-text-color, #212121);
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .status-group span {
+    color: var(--secondary-text-color, #727272);
+    font-size: 13px;
+  }
+
   .area-card,
   .entity-tile,
-  .action-tile {
+  .action-tile,
+  .device-row,
+  .environment-stat {
     min-height: 70px;
   }
 
@@ -169,6 +252,11 @@ export const dashboardCardContentStyles = css`
     gap: 6px;
     text-align: left;
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--yd-surface) 54%, transparent);
+  }
+
+  .variant-compact .subtitle,
+  .variant-compact .section-label {
+    display: none;
   }
 
   .action-tile ha-icon {

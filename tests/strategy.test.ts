@@ -22,6 +22,7 @@ describe("dashboard strategy", () => {
       }
     );
     const dashboard = await YeelightDashboardStrategy.generate({}, ha);
+    expect(dashboard.views.map((view) => view.title)).toEqual(["总览", "灯光", "设备", "场景", "健康"]);
     expect(dashboard.views.map((view) => view.path)).toEqual([
       "overview",
       "lighting",
@@ -32,13 +33,26 @@ describe("dashboard strategy", () => {
     expect(dashboard.views.every((view) => view.type === "sections")).toBe(true);
     const overviewSections = dashboard.views[0].sections || [];
     const overviewCards = overviewSections.flatMap((section) => section.cards);
-    expect(overviewSections.map((section) => section.title)).toEqual(["Home", "Control", "Operations"]);
+    expect(overviewSections.map((section) => section.title)).toEqual(["家庭", "控制", "运营"]);
+    expect(overviewCards).toHaveLength(8);
+    expect(overviewCards.map((card) => card.type)).toContain("custom:yeelight-dashboard-status-card");
+    expect(overviewCards.map((card) => card.type)).toContain("custom:yeelight-dashboard-notice-card");
+    expect(overviewCards.map((card) => card.type)).toContain("custom:yeelight-dashboard-ecosystem-card");
     expect(overviewCards.map((card) => card.type)).toContain("custom:yeelight-dashboard-routines-card");
     expect(overviewCards.find((card) => card.type === "custom:yeelight-dashboard-hero-card")?.grid_options).toEqual({ columns: 12, rows: 9 });
+    expect(overviewCards.find((card) => card.type === "custom:yeelight-dashboard-status-card")?.grid_options).toEqual({ columns: 12, rows: 5 });
     expect(overviewCards.find((card) => card.type === "custom:yeelight-dashboard-light-card")?.grid_options).toEqual({ columns: 12, rows: 8 });
     expect(overviewCards.find((card) => card.type === "custom:yeelight-dashboard-rooms-card")?.area_summaries).toMatchObject([
       { areaId: "living", name: "Living Room", activeLightCount: 1 }
     ]);
+    const areas = dashboard.views.find((view) => view.path === "areas")!;
+    const areaCards = areas.sections?.flatMap((section) => section.cards) || [];
+    expect(areas.title).toBe("设备");
+    expect(areas.sections?.[0].title).toBe("设备与房间");
+    expect(areaCards.map((card) => card.type)).toContain("custom:yeelight-dashboard-devices-card");
+    const routines = dashboard.views.find((view) => view.path === "scenes")!;
+    expect(routines.title).toBe("场景");
+    expect(routines.sections?.[0].cards[0].type).toBe("custom:yeelight-dashboard-routines-card");
     expect(JSON.stringify(dashboard)).not.toContain("ha_yeelight_cards");
     expect(JSON.stringify(dashboard)).not.toContain("config/www/yeelight");
   });
@@ -76,7 +90,9 @@ describe("dashboard strategy", () => {
     expect(overview.layout_studio).toBe(true);
     expect(overview.sections).toBeUndefined();
     expect(overview.cards?.[0].view_layout).toMatchObject({ key: "overview.hero", x: 0, y: 0, w: 12, h: 4 });
-    expect(overview.cards?.[1].view_layout).toMatchObject({ key: "overview.lights", x: 0, y: 4, w: 6, h: 2 });
+    expect(overview.cards?.[1].view_layout).toMatchObject({ key: "overview.status" });
+    expect(overview.cards?.[2].view_layout).toMatchObject({ key: "overview.lights", x: 0, w: 6, h: 2 });
+    expect(Number((overview.cards?.[2].view_layout as { y?: number } | undefined)?.y)).toBeGreaterThanOrEqual(4);
   });
 
   it("applies profile defaults and selected area filtering", async () => {
@@ -141,6 +157,9 @@ describe("dashboard strategy", () => {
       ha
     );
     const json = JSON.stringify(dashboard);
+    const environment = dashboard.views.find((view) => view.path === "environment")!;
+    expect(environment.title).toBe("环境");
+    expect(environment.sections?.[0].cards[0].type).toBe("custom:yeelight-dashboard-environment-card");
     expect(json).toContain('"type":"weather-forecast"');
     expect(json).toContain('"type":"calendar"');
     expect(json).toContain('"type":"todo-list"');

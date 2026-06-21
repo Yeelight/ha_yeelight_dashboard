@@ -23,6 +23,25 @@ describe("strategy editor", () => {
     expect(event.detail.config.profile).toBe("lighting");
   });
 
+  it("renders localized strategy editor labels", async () => {
+    const editor = document.createElement(EDITOR_TAG) as HTMLElement & {
+      setConfig: (config: Record<string, unknown>) => void;
+      hass: unknown;
+      updateComplete: Promise<boolean>;
+      shadowRoot: ShadowRoot;
+    };
+    editor.hass = hass({});
+    editor.setConfig({});
+    document.body.append(editor);
+    await editor.updateComplete;
+
+    expect(editor.shadowRoot.textContent).toContain("模式");
+    expect(editor.shadowRoot.textContent).toContain("原生分区");
+    expect(editor.shadowRoot.textContent).toContain("场景上限");
+    expect(editor.shadowRoot.textContent).not.toContain("Profile");
+    expect(editor.shadowRoot.textContent).not.toContain("Scene limit");
+  });
+
   it("applies profile defaults when the HA create dialog switches profile", async () => {
     const editor = document.createElement(EDITOR_TAG) as HTMLElement & {
       setConfig: (config: Record<string, unknown>) => void;
@@ -82,12 +101,12 @@ describe("strategy editor", () => {
     expect((await areaEvent).detail.config.selected_areas).toEqual(["living"]);
 
     const mediaEvent = nextConfigEvent(editor);
-    checkboxByText(editor.shadowRoot, "media").click();
+    checkboxByText(editor.shadowRoot, "媒体").click();
     expect((await mediaEvent).detail.config.views.media).toBe(false);
 
     const limitEvent = nextConfigEvent(editor);
-    inputByText(editor.shadowRoot, "Scene limit").value = "3";
-    inputByText(editor.shadowRoot, "Scene limit").dispatchEvent(new Event("change"));
+    inputByText(editor.shadowRoot, "场景上限").value = "3";
+    inputByText(editor.shadowRoot, "场景上限").dispatchEvent(new Event("change"));
     expect((await limitEvent).detail.config.preferences.scene_limit).toBe(3);
   });
 
@@ -116,7 +135,41 @@ describe("strategy editor", () => {
     textarea.value = "{";
     textarea.dispatchEvent(new Event("change"));
     await editor.updateComplete;
-    expect(editor.shadowRoot.textContent).toContain("Invalid JSON");
+    expect(editor.shadowRoot.textContent).toContain("JSON 格式无效");
+  });
+
+  it("imports copied Layout Studio snippets from clipboard", async () => {
+    const editor = document.createElement(EDITOR_TAG) as HTMLElement & {
+      setConfig: (config: Record<string, unknown>) => void;
+      updateComplete: Promise<boolean>;
+      shadowRoot: ShadowRoot;
+    };
+    editor.setConfig({ layout_mode: "canvas" });
+    document.body.append(editor);
+    await editor.updateComplete;
+
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        readText: async () =>
+          JSON.stringify({
+            layout_mode: "canvas",
+            layout_overrides: { overview: { "overview.status": { x: 0, y: 9, w: 12, h: 5 } } }
+          })
+      }
+    });
+
+    const eventPromise = nextConfigEvent(editor);
+    const importButton = [...editor.shadowRoot.querySelectorAll("button")].find((button) => button.textContent?.includes("导入"));
+    importButton?.click();
+
+    expect((await eventPromise).detail.config.layout_overrides).toEqual({
+      overview: {
+        "overview.status": { x: 0, y: 9, w: 12, h: 5 }
+      }
+    });
+    await editor.updateComplete;
+    expect(editor.shadowRoot.textContent).toContain("布局已导入");
   });
 
   it("shows a non-blocking notice when Yeelight themes are missing", async () => {
@@ -131,7 +184,7 @@ describe("strategy editor", () => {
     document.body.append(editor);
     await editor.updateComplete;
 
-    expect(editor.shadowRoot.textContent).toContain("Yeelight Themes are not currently exposed");
+    expect(editor.shadowRoot.textContent).toContain("Home Assistant 当前未暴露易来主题");
   });
 
   it("does not warn when the selected Yeelight theme is exposed by HA", async () => {
@@ -146,7 +199,7 @@ describe("strategy editor", () => {
     document.body.append(editor);
     await editor.updateComplete;
 
-    expect(editor.shadowRoot.textContent).not.toContain("Yeelight Themes are not currently exposed");
+    expect(editor.shadowRoot.textContent).not.toContain("Home Assistant 当前未暴露易来主题");
   });
 });
 

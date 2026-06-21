@@ -35,6 +35,16 @@ export const dashboardCardBaseStyles = css`
     isolation: isolate;
   }
 
+  .card.density-compact {
+    gap: 9px;
+    padding: 12px;
+  }
+
+  .card.variant-panel {
+    gap: 16px;
+    padding: 18px;
+  }
+
   .card::before {
     content: "";
     position: absolute;
@@ -42,8 +52,8 @@ export const dashboardCardBaseStyles = css`
     z-index: -1;
     pointer-events: none;
     background:
-      linear-gradient(135deg, color-mix(in srgb, var(--yd-accent) 3%, transparent), transparent 42%),
-      radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--yd-accent) 4%, transparent), transparent 30%);
+      linear-gradient(135deg, color-mix(in srgb, var(--yd-accent) 4%, transparent), transparent 46%),
+      linear-gradient(180deg, transparent, color-mix(in srgb, var(--yd-surface-muted) 16%, transparent));
   }
 
   .card.hero {
@@ -58,17 +68,37 @@ export const dashboardCardBaseStyles = css`
     --yd-accent: var(--yl-warm, #f6a400);
   }
 
+  .card.status {
+    --yd-accent: #2f7dcd;
+  }
+
+  .card.notice {
+    --yd-accent: var(--warning-color, #f29900);
+  }
+
   .card.rooms,
   .card.room {
     --yd-accent: #20a67a;
+  }
+
+  .card.devices {
+    --yd-accent: #2276d2;
   }
 
   .card.routines {
     --yd-accent: #7a64d6;
   }
 
+  .card.environment {
+    --yd-accent: #00a1a7;
+  }
+
   .card.health {
     --yd-accent: var(--success-color, #0f9d58);
+  }
+
+  .card.ecosystem {
+    --yd-accent: #00897b;
   }
 
   .header,
@@ -115,6 +145,10 @@ export const dashboardCardBaseStyles = css`
     line-height: 1.25;
   }
 
+  .variant-panel .title {
+    font-size: 18px;
+  }
+
   .subtitle,
   .metric span,
   .entity-text span,
@@ -135,10 +169,15 @@ export const dashboardCardBaseStyles = css`
 
   .metric,
   .entity-row,
+  .device-row,
   .area-card,
   .area-pill,
   .entity-tile,
   .action-tile,
+  .routine-hero-action,
+  .environment-primary,
+  .environment-stat,
+  .status-group,
   .health-ok {
     border: 1px solid var(--yd-border);
     border-radius: 8px;
@@ -151,6 +190,10 @@ export const dashboardCardBaseStyles = css`
     border-color: color-mix(in srgb, var(--yd-border) 84%, transparent);
     background:
       linear-gradient(180deg, color-mix(in srgb, var(--yd-surface) 96%, white), color-mix(in srgb, var(--yd-surface-muted) 64%, transparent));
+  }
+
+  .density-compact .metric {
+    padding: 7px 8px;
   }
 
   .metric strong,

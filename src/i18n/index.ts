@@ -1,12 +1,22 @@
 import type { HomeAssistant } from "../types";
 import { EN, ZH, type TranslationKey } from "./translations";
 
+export type { TranslationKey } from "./translations";
+
 export function localize(
   hass: HomeAssistant | undefined,
   key: TranslationKey,
   values: Record<string, string | number> = {}
 ): string {
-  const dictionary = isChinese(hass?.locale?.language) ? ZH : EN;
+  return localizeLanguage(hass?.locale?.language, key, values);
+}
+
+export function localizeLanguage(
+  language: string | undefined,
+  key: TranslationKey,
+  values: Record<string, string | number> = {}
+): string {
+  const dictionary = isChinese(language) ? ZH : EN;
   return interpolate(dictionary[key] ?? EN[key], values);
 }
 
