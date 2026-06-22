@@ -7,9 +7,44 @@ export const dashboardCardContentStyles = css`
   .devices-board,
   .routine-board,
   .environment-board,
+  .health-board,
+  .media-board,
+  .camera-board,
+  .security-board,
+  .presence-board,
   .ecosystem-board {
     display: grid;
     gap: 8px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .card > .hero-board,
+  .card > .entity-list,
+  .card > .status-board,
+  .card > .devices-board,
+  .card > .routine-board,
+  .card > .environment-board,
+  .card > .health-board,
+  .card > .media-board,
+  .card > .camera-board,
+  .card > .camera-wall-grid,
+  .card > .security-board,
+  .card > .presence-board,
+  .card > .ecosystem-board,
+  .card > .comfort-board,
+  .card > .ops-board,
+  .card > .utility-board,
+  .card > .health-ok,
+  .card > .empty {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .card > .health-ok,
+  .card > .empty {
+    align-self: stretch;
   }
 
   .hero-copy {
@@ -96,12 +131,26 @@ export const dashboardCardContentStyles = css`
   .area-card,
   .entity-tile,
   .action-tile,
+  .device-feature,
+  .device-lane,
+  .routine-type-chips span,
+  .environment-zone,
+  .health-hero,
+  .health-group,
   .device-row,
-  .routine-hero-action,
-  .environment-primary,
-  .environment-stat,
-  .status-group,
-  .health-ok {
+    .routine-hero-action,
+    .environment-primary,
+    .environment-stat,
+    .media-feature,
+    .media-row,
+    .camera-feature,
+    .camera-thumb,
+    .security-feature,
+    .security-row,
+    .presence-row,
+    .presence-person,
+    .status-group,
+    .health-ok {
     min-width: 0;
     padding: 10px;
   }
@@ -110,10 +159,24 @@ export const dashboardCardContentStyles = css`
   .density-compact .area-card,
   .density-compact .entity-tile,
   .density-compact .action-tile,
+  .density-compact .device-feature,
+  .density-compact .device-lane,
+  .density-compact .routine-type-chips span,
+  .density-compact .environment-zone,
+  .density-compact .health-hero,
+  .density-compact .health-group,
   .density-compact .device-row,
   .density-compact .routine-hero-action,
   .density-compact .environment-primary,
   .density-compact .environment-stat,
+  .density-compact .media-feature,
+  .density-compact .media-row,
+  .density-compact .camera-feature,
+  .density-compact .camera-thumb,
+  .density-compact .security-feature,
+  .density-compact .security-row,
+  .density-compact .presence-row,
+  .density-compact .presence-person,
   .density-compact .status-group,
   .density-compact .health-ok {
     padding: 8px;
@@ -123,10 +186,14 @@ export const dashboardCardContentStyles = css`
   .variant-panel .area-card,
   .variant-panel .entity-tile,
   .variant-panel .action-tile,
+  .variant-panel .device-feature,
+  .variant-panel .health-hero,
   .variant-panel .device-row,
   .variant-panel .routine-hero-action,
   .variant-panel .environment-primary,
   .variant-panel .environment-stat,
+  .variant-panel .camera-thumb,
+  .variant-panel .presence-person,
   .variant-panel .status-group,
   .variant-panel .health-ok {
     min-height: 84px;
@@ -177,6 +244,14 @@ export const dashboardCardContentStyles = css`
       color-mix(in srgb, var(--yd-surface-muted) 86%, transparent);
   }
 
+  .area-card-link,
+  .area-pill-link,
+  .status-group-link {
+    color: inherit;
+    font: inherit;
+    text-align: left;
+  }
+
   .area-card.warning {
     border-color: color-mix(in srgb, var(--warning-color, #f29900) 38%, var(--divider-color, rgba(0, 0, 0, 0.12)));
   }
@@ -224,14 +299,14 @@ export const dashboardCardContentStyles = css`
 
   .entity-tile {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px 10px;
     align-items: center;
     position: relative;
   }
 
   .entity-tile.active,
-  .action-tile:not(:disabled):hover {
+  .action-tile:hover {
     border-color: color-mix(in srgb, var(--yd-accent) 45%, var(--yd-border));
     background:
       linear-gradient(135deg, color-mix(in srgb, var(--yd-accent) 7%, transparent), transparent 70%),
@@ -246,12 +321,41 @@ export const dashboardCardContentStyles = css`
 
   .action-tile {
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto;
     align-items: center;
-    justify-items: start;
     gap: 6px;
     text-align: left;
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--yd-surface) 54%, transparent);
+  }
+
+  .action-tile-main {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    justify-items: start;
+    gap: 6px;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .action-tile-run {
+    width: 100%;
+    min-height: 32px;
+    border: 1px solid color-mix(in srgb, var(--yd-accent) 26%, var(--yd-border));
+    border-radius: 8px;
+    padding: 0 10px;
+    color: var(--yd-accent);
+    background: color-mix(in srgb, var(--yd-accent) 9%, transparent);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
   }
 
   .variant-compact .subtitle,
@@ -268,6 +372,8 @@ export const dashboardCardContentStyles = css`
   .area-pill strong,
   .area-pill span,
   .area-card-head strong,
+  .entity-main strong,
+  .entity-main small,
   .entity-tile strong,
   .entity-tile span {
     min-width: 0;
@@ -286,9 +392,14 @@ export const dashboardCardContentStyles = css`
   }
 
   .entity-row {
+    display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     padding: 8px;
     background: color-mix(in srgb, var(--yd-surface-muted) 84%, transparent);
+  }
+
+  .entity-row-main {
+    grid-column: 1 / 3;
   }
 
   .entity-list.compact {

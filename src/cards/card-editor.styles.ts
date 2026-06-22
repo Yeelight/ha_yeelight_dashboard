@@ -1,6 +1,12 @@
 import { css } from "lit";
 
-export const cardEditorStyles = css`
+import { cardEditorDisplayPresetStyles } from "./card-editor-display-presets.styles";
+import { cardEditorImageSourceStyles } from "./card-editor-image-source.styles";
+import { cardEditorModeGuideStyles } from "./card-editor-mode-guide.styles";
+import { cardEditorNoteContentStyles } from "./card-editor-note-content.styles";
+import { cardEditorPanelActionsContentStyles } from "./card-editor-panel-actions-content.styles";
+
+const baseCardEditorStyles = css`
   :host {
     display: block;
     color: var(--primary-text-color, #212121);
@@ -181,6 +187,72 @@ export const cardEditorStyles = css`
     min-height: 32px;
   }
 
+  .subtype-palette {
+    display: grid;
+    gap: 8px;
+    border: 1px solid color-mix(in srgb, var(--divider-color, rgba(0, 0, 0, 0.12)) 72%, transparent);
+    border-radius: 8px;
+    padding: 10px;
+    background: color-mix(in srgb, var(--secondary-background-color, #f5f5f5) 58%, transparent);
+  }
+
+  .subtype-palette-head {
+    display: grid;
+    gap: 2px;
+  }
+
+  .subtype-palette-head small {
+    color: var(--secondary-text-color, #727272);
+    font-size: 12px;
+  }
+
+  .subtype-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+    gap: 8px;
+  }
+
+  .subtype-options button {
+    display: grid;
+    gap: 3px;
+    min-height: 72px;
+    padding: 8px 10px;
+    text-align: start;
+    align-content: center;
+    background: var(--card-background-color, #fff);
+  }
+
+  .subtype-options button.active {
+    border-color: var(--primary-color, #03a9f4);
+    background: color-mix(in srgb, var(--primary-color, #03a9f4) 10%, var(--card-background-color, #fff));
+    box-shadow: inset 3px 0 0 var(--primary-color, #03a9f4);
+  }
+
+  .subtype-options strong,
+  .subtype-options small,
+  .subtype-options em {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .subtype-options strong {
+    color: var(--primary-text-color, #212121);
+    font-size: 13px;
+  }
+
+  .subtype-options small {
+    color: var(--secondary-text-color, #727272);
+    font-size: 11px;
+  }
+
+  .subtype-options em {
+    color: var(--secondary-text-color, #727272);
+    font-size: 11px;
+    font-style: normal;
+  }
+
   .entity-picker {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;
@@ -319,3 +391,5 @@ export const cardEditorStyles = css`
     }
   }
 `;
+
+export const cardEditorStyles = [baseCardEditorStyles, cardEditorImageSourceStyles, cardEditorNoteContentStyles, cardEditorPanelActionsContentStyles, cardEditorModeGuideStyles, cardEditorDisplayPresetStyles];

@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeConfig } from "../src/strategy/config";
+import { STRATEGY_CONFIG_TYPE, normalizeConfig } from "../src/strategy/config";
 
 describe("strategy config", () => {
+  it("keeps the HA strategy YAML type in normalized config", () => {
+    expect(normalizeConfig()).toMatchObject({ type: STRATEGY_CONFIG_TYPE });
+    expect(normalizeConfig({ type: "wrong", profile: "lighting" } as Parameters<typeof normalizeConfig>[0])).toMatchObject({
+      type: STRATEGY_CONFIG_TYPE,
+      profile: "lighting"
+    });
+  });
+
   it("applies profile defaults without losing explicit overrides", () => {
     expect(normalizeConfig({ profile: "panel" })).toMatchObject({
       theme: "Yeelight Panel",

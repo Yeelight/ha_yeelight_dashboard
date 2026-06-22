@@ -10,6 +10,7 @@ import type {
 } from "../types";
 
 export const STRATEGY_TYPE = "yeelight-dashboard";
+export const STRATEGY_CONFIG_TYPE = `custom:${STRATEGY_TYPE}`;
 export const STRATEGY_TAG = "ll-strategy-dashboard-yeelight-dashboard";
 export const EDITOR_TAG = "yeelight-dashboard-strategy-editor";
 
@@ -62,6 +63,7 @@ const PROFILE_DEFAULTS: Record<
 export function defaultConfig(): YeelightDashboardConfig {
   const profileDefaults = PROFILE_DEFAULTS.standard;
   return {
+    type: STRATEGY_CONFIG_TYPE,
     schema_version: 1,
     profile: "standard",
     theme: profileDefaults.theme || "Yeelight Minimal",
@@ -91,6 +93,7 @@ export function normalizeConfig(input?: Partial<YeelightDashboardConfig>): Yeeli
   return {
     ...base,
     ...input,
+    type: STRATEGY_CONFIG_TYPE,
     schema_version: 1,
     profile,
     theme: String(input?.theme || profileDefaults.theme || base.theme),

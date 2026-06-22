@@ -3,6 +3,7 @@ import { css } from "lit";
 export const dashboardCardBaseStyles = css`
   :host {
     display: block;
+    height: 100%;
     container-type: inline-size;
     font-family: var(--paper-font-body1_-_font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
     --yd-accent: var(--yl-accent, var(--primary-color, #1976d2));
@@ -14,6 +15,8 @@ export const dashboardCardBaseStyles = css`
   }
 
   ha-card {
+    display: block;
+    box-sizing: border-box;
     height: 100%;
     overflow: hidden;
     background:
@@ -27,9 +30,13 @@ export const dashboardCardBaseStyles = css`
 
   .card {
     display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
     gap: 13px;
+    box-sizing: border-box;
     min-width: 0;
-    min-height: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
     padding: 15px;
     position: relative;
     isolation: isolate;
@@ -93,6 +100,59 @@ export const dashboardCardBaseStyles = css`
     --yd-accent: #00a1a7;
   }
 
+  .card.climate {
+    --yd-accent: #0086c9;
+  }
+
+  .card.air {
+    --yd-accent: #00a37a;
+  }
+
+  .card.water {
+    --yd-accent: #0d8bd8;
+  }
+
+  .card.power {
+    --yd-accent: #f29900;
+  }
+
+  .card.energy {
+    --yd-accent: #7cb342;
+  }
+
+  .card.infrastructure {
+    --yd-accent: #5e7ce2;
+  }
+
+  .card.media {
+    --yd-accent: #4b7bec;
+  }
+
+  .card.camera,
+  .card.cameraWall {
+    --yd-accent: #44546a;
+  }
+
+  .card.security {
+    --yd-accent: #d35400;
+  }
+
+  .card.presence {
+    --yd-accent: #0f9d8a;
+  }
+
+  .card.panelActions {
+    --yd-accent: #7a64d6;
+  }
+
+  .card.image {
+    --yd-accent: #2f7dcd;
+  }
+
+  .card.note {
+    --yd-accent: #8a6d3b;
+  }
+
   .card.health {
     --yd-accent: var(--success-color, #0f9d58);
   }
@@ -151,6 +211,7 @@ export const dashboardCardBaseStyles = css`
 
   .subtitle,
   .metric span,
+  .metric small,
   .entity-text span,
   .empty {
     color: var(--secondary-text-color, #727272);
@@ -170,26 +231,47 @@ export const dashboardCardBaseStyles = css`
   .metric,
   .entity-row,
   .device-row,
+  .device-feature,
+  .device-lane,
+  .routine-type-chips button,
+  .routine-type-chips span,
+  .environment-zones button,
+  .environment-zone,
+  .health-hero,
+  .health-group,
   .area-card,
   .area-pill,
   .entity-tile,
   .action-tile,
-  .routine-hero-action,
-  .environment-primary,
-  .environment-stat,
-  .status-group,
-  .health-ok {
+    .routine-hero-action,
+    .environment-primary,
+    .environment-stat,
+    .media-feature,
+    .media-row,
+    .camera-feature,
+    .camera-thumb,
+    .security-feature,
+    .security-row,
+    .presence-row,
+    .presence-person,
+    .status-group,
+    .health-ok {
     border: 1px solid var(--yd-border);
     border-radius: 8px;
     background: color-mix(in srgb, var(--yd-surface-muted) 86%, transparent);
   }
 
   .metric {
+    display: block;
     min-width: 0;
+    width: 100%;
     padding: 9px 10px;
     border-color: color-mix(in srgb, var(--yd-border) 84%, transparent);
     background:
       linear-gradient(180deg, color-mix(in srgb, var(--yd-surface) 96%, white), color-mix(in srgb, var(--yd-surface-muted) 64%, transparent));
+    color: inherit;
+    font: inherit;
+    text-align: left;
   }
 
   .density-compact .metric {
@@ -198,6 +280,7 @@ export const dashboardCardBaseStyles = css`
 
   .metric strong,
   .metric span,
+  .metric small,
   .entity-text strong,
   .entity-text span {
     display: block;
@@ -205,6 +288,13 @@ export const dashboardCardBaseStyles = css`
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .metric small {
+    margin-top: 5px;
+    color: color-mix(in srgb, var(--yd-accent) 70%, var(--secondary-text-color, #727272));
+    font-size: 11px;
+    font-weight: 650;
   }
 
   .metric strong {

@@ -3,6 +3,10 @@ import { html, type TemplateResult } from "lit";
 import { localize, type TranslationKey } from "../i18n";
 import { DASHBOARD_CARD_DEFINITIONS } from "./card-definitions";
 import { renderCardTypeControl } from "./card-editor-card-type";
+import { contentFormDataFields, contentFormSchemaFields, contentHelper, contentPatchFields, renderImageSourceEditor, renderNativeContentFields } from "./card-editor-content-fields";
+import { renderNoteContentEditor } from "./card-editor-note-content";
+import { renderPanelActionsContentEditor } from "./card-editor-panel-actions-content";
+import { subtypeOptionsForType } from "./card-subtypes";
 import { recommendedDomainsForCard } from "./entity-picker";
 import type { DashboardCardConfig, HomeAssistant } from "./types";
 
@@ -12,8 +16,13 @@ type EditorPatch = Partial<DashboardCardConfig>;
 
 const FORM_LABELS: Record<string, TranslationKey> = {
   type: "editor.card_type",
+  subtype: "editor.subtype",
   title: "editor.title",
   subtitle: "editor.subtitle",
+  content: "editor.content",
+  image_url: "editor.image_url",
+  image_urls_text: "editor.image_urls",
+  url: "editor.url",
   item_limit: "editor.item_limit",
   grid_columns: "editor.grid_columns",
   grid_rows: "editor.grid_rows",
@@ -33,11 +42,15 @@ export function renderContentForm(
   if (customElements.get("ha-form")) {
     return html`
       ${renderHaForm(hass, contentFormData(config), contentFormSchema(hass, config), (value) => onPatch(contentPatch(value)), (schema) => helperFor(hass, schema, config))}
+      ${renderImageSourceEditor(hass, config, onPatch)}
+      ${renderNoteContentEditor(hass, config, onPatch)}
+      ${renderPanelActionsContentEditor(hass, config, onPatch)}
       ${renderCardTypeControl(hass, config, (type) => onPatch({ type }), onRecommend, { compact: true })}
     `;
   }
   return html`
     ${renderCardTypeControl(hass, config, (type) => onPatch({ type }), onRecommend)}
+    ${renderNativeSubtypeSelect(hass, config, onPatch)}
     <label>
       <span>${localize(hass, "editor.title")}</span>
       <input .value=${config.title || ""} @input=${(event: Event) => onPatch({ title: (event.target as HTMLInputElement).value })} />
@@ -46,6 +59,10 @@ export function renderContentForm(
       <span>${localize(hass, "editor.subtitle")}</span>
       <input .value=${config.subtitle || ""} @input=${(event: Event) => onPatch({ subtitle: (event.target as HTMLInputElement).value })} />
     </label>
+    ${renderNativeContentFields(hass, config, onPatch)}
+    ${renderImageSourceEditor(hass, config, onPatch)}
+    ${renderNoteContentEditor(hass, config, onPatch)}
+    ${renderPanelActionsContentEditor(hass, config, onPatch)}
     <label>
       <span>${localize(hass, "editor.entities")}</span>
       <textarea .value=${(config.entities || []).join("\n")} @change=${(event: Event) => onPatch({ entities: (event.target as HTMLTextAreaElement).value.split(/\s+/).filter(Boolean) })}></textarea>
@@ -117,8 +134,10 @@ function renderHaForm(
 function contentFormData(config: DashboardCardConfig): FormValue {
   return pickDefined({
     type: config.type,
+    subtype: config.subtype,
     title: config.title,
-    subtitle: config.subtitle
+    subtitle: config.subtitle,
+    ...contentFormDataFields(config)
   });
 }
 
@@ -141,6 +160,15 @@ function visibilityFormData(config: DashboardCardConfig): FormValue {
 }
 
 function contentFormSchema(hass: HomeAssistant | undefined, config: DashboardCardConfig): FormSchema {
+  const subtypeOptions = subtypeOptionsForType(config.type);
+  const subtypeSchema = subtypeOptions.length
+    ? [
+        {
+          name: "subtype",
+          selector: selectSelector(subtypeOptions.map((option) => option.value), (value) => localize(hass, `editor.subtype.${value}` as TranslationKey))
+        }
+      ]
+    : [];
   return [
     {
       name: "type",
@@ -154,6 +182,7 @@ function contentFormSchema(hass: HomeAssistant | undefined, config: DashboardCar
         }
       }
     },
+    ...subtypeSchema,
     {
       type: "grid",
       name: "",
@@ -161,7 +190,8 @@ function contentFormSchema(hass: HomeAssistant | undefined, config: DashboardCar
         { name: "title", selector: { text: {} } },
         { name: "subtitle", selector: { text: {} } }
       ]
-    }
+    },
+    ...contentFormSchemaFields(config.type)
   ];
 }
 
@@ -204,8 +234,10 @@ function visibilityFormSchema(): FormSchema {
 function contentPatch(value: FormValue): EditorPatch {
   return cleanPatch({
     ...(has(value, "type") ? { type: asString(value.type) } : {}),
+    ...(has(value, "subtype") ? { subtype: asString(value.subtype) } : {}),
     ...(has(value, "title") ? { title: asString(value.title) } : {}),
-    ...(has(value, "subtitle") ? { subtitle: asString(value.subtitle) } : {})
+    ...(has(value, "subtitle") ? { subtitle: asString(value.subtitle) } : {}),
+    ...contentPatchFields(value, has)
   });
 }
 
@@ -239,7 +271,9 @@ function labelFor(hass: HomeAssistant | undefined, schema: Record<string, unknow
 }
 
 function helperFor(hass: HomeAssistant | undefined, schema: Record<string, unknown>, config: DashboardCardConfig): string {
-  if (schema.name === "type") return localize(hass, "editor.card_type_domains", { domains: recommendedDomainsForCard(config.type).join(", ") || "-" });
+  if (schema.name === "type") return localize(hass, "editor.card_type_domains", { domains: recommendedDomainsForCard(config.type, config.subtype).join(", ") || "-" });
+  if (schema.name === "subtype") return localize(hass, "editor.subtype_hint");
+  if (typeof schema.name === "string") return contentHelper(hass, config.type, schema.name);
   return "";
 }
 
@@ -322,6 +356,20 @@ function renderNativeSelect(
       <select .value=${config[key] || ""} @change=${(event: Event) => onPatch({ [key]: (event.target as HTMLSelectElement).value })}>
         ${values.map((value) => html`<option value=${value} .selected=${config[key] === value}>${localize(hass, `editor.${key}.${value}` as TranslationKey)}</option>`)}
       </select>
+    </label>
+  `;
+}
+
+function renderNativeSubtypeSelect(hass: HomeAssistant | undefined, config: DashboardCardConfig, onPatch: (patch: EditorPatch) => void): TemplateResult | "" {
+  const options = subtypeOptionsForType(config.type);
+  if (!options.length) return "";
+  return html`
+    <label>
+      <span>${localize(hass, "editor.subtype")}</span>
+      <select .value=${config.subtype || ""} @change=${(event: Event) => onPatch({ subtype: (event.target as HTMLSelectElement).value })}>
+        ${options.map((option) => html`<option value=${option.value} .selected=${config.subtype === option.value}>${localize(hass, `editor.subtype.${option.value}` as TranslationKey)}</option>`)}
+      </select>
+      <span class="hint">${localize(hass, "editor.subtype_hint")}</span>
     </label>
   `;
 }

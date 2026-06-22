@@ -2,9 +2,9 @@ import { domainOf, isAvailable } from "../model/registry";
 import type { DashboardCardSummary, NormalizedEntity } from "./types";
 import type { HassEntity, HomeAssistant } from "../types";
 
-const READ_ONLY_DOMAINS = new Set(["sensor", "binary_sensor", "event", "update", "weather"]);
+const READ_ONLY_DOMAINS = new Set(["sensor", "binary_sensor", "event", "update", "weather", "camera", "person", "device_tracker", "alarm_control_panel", "lock", "schedule"]);
 const ACTION_DOMAINS = new Set(["scene", "button"]);
-const CONTROL_DOMAINS = new Set(["light", "switch", "fan", "cover", "climate", "humidifier", "media_player", "lock"]);
+const CONTROL_DOMAINS = new Set(["light", "switch", "fan", "cover", "climate", "humidifier", "media_player", "remote", "lock"]);
 
 export function normalizeEntity(hass: HomeAssistant | undefined, entityId: string | undefined): NormalizedEntity | undefined {
   if (!hass || !entityId) return undefined;
@@ -33,7 +33,7 @@ export function summarizeEntities(hass: HomeAssistant | undefined, entityIds: st
     entities,
     lights,
     activeLights: lights.filter((entity) => entity.state === "on"),
-    routines: entities.filter((entity) => ["scene", "script", "automation", "button"].includes(entity.domain)),
+    routines: entities.filter((entity) => ["scene", "script", "automation", "button", "schedule"].includes(entity.domain)),
     controllable: entities.filter((entity) => CONTROL_DOMAINS.has(entity.domain)),
     updates,
     unknown,
@@ -79,7 +79,15 @@ function iconFor(stateObj: HassEntity, domain: string): string {
       script: "mdi:script-text",
       automation: "mdi:robot",
       button: "mdi:button-pointer",
-      update: "mdi:update"
+      schedule: "mdi:calendar-clock",
+      update: "mdi:update",
+      media_player: "mdi:play-circle",
+      remote: "mdi:remote",
+      camera: "mdi:cctv",
+      alarm_control_panel: "mdi:shield-home",
+      lock: "mdi:lock",
+      person: "mdi:account",
+      device_tracker: "mdi:crosshairs-gps"
     }[domain] ?? "mdi:devices"
   );
 }

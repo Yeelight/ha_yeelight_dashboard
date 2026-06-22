@@ -33,7 +33,7 @@ export function renderCardTypeControl(
           `}
       <div class="card-type-summary">
         <span>${localize(hass, cardTypeHintKey(config.type))}</span>
-        <small>${localize(hass, "editor.card_type_domains", { domains: recommendedDomainsForCard(config.type).join(", ") || "-" })}</small>
+        <small>${localize(hass, "editor.card_type_domains", { domains: recommendedDomainsForCard(config.type, config.subtype).join(", ") || "-" })}</small>
         <button type="button" @click=${onRecommend}>${localize(hass, "editor.card_type_recommend")}</button>
       </div>
     </div>

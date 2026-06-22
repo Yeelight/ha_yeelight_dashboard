@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CANVAS_VIEW_TAG } from "../src/views/canvas-view";
+import { hass } from "./fixtures";
 import "../src/index";
 
 describe("canvas view", () => {
@@ -29,10 +30,40 @@ describe("canvas view", () => {
     expect(slot.style.gridRow).toBe("4 / span 2");
   });
 
+  it("does not treat normal card clicks as layout selection outside edit mode", async () => {
+    const view = document.createElement(CANVAS_VIEW_TAG) as HTMLElement & {
+      setConfig: (config: Record<string, unknown>) => void;
+      cards: HTMLElement[];
+      updateComplete: Promise<boolean>;
+      shadowRoot: ShadowRoot;
+    };
+    const nativeCard = document.createElement("button");
+    nativeCard.textContent = "Native tile";
+    let clicked = false;
+    nativeCard.addEventListener("click", () => {
+      clicked = true;
+    });
+    view.setConfig({
+      title: "Overview",
+      path: "overview",
+      cards: [{ type: "tile", view_layout: { key: "entity.light.ceiling", x: 0, y: 0, w: 4, h: 2 } }]
+    });
+    view.cards = [nativeCard];
+    document.body.append(view);
+    await view.updateComplete;
+
+    nativeCard.click();
+    await view.updateComplete;
+
+    expect(clicked).toBe(true);
+    expect(view.shadowRoot.querySelector(".slot.active")).toBeNull();
+  });
+
   it("exports managed layout overrides from edit mode", async () => {
     const view = document.createElement(CANVAS_VIEW_TAG) as HTMLElement & {
       setConfig: (config: Record<string, unknown>) => void;
       cards: HTMLElement[];
+      hass: unknown;
       lovelace: unknown;
       updateComplete: Promise<boolean>;
       shadowRoot: ShadowRoot;
@@ -43,14 +74,21 @@ describe("canvas view", () => {
       cards: [{ type: "tile", view_layout: { key: "overview.light", x: 0, y: 0, w: 6, h: 2 } }]
     });
     view.cards = [document.createElement("div")];
+    view.hass = hass({});
     view.lovelace = { editMode: true };
     document.body.append(view);
     await view.updateComplete;
 
+    expect(view.shadowRoot.textContent).toContain("布局工作台");
+    expect(view.shadowRoot.textContent).toContain("拖拽或缩放卡片");
+    expect(view.shadowRoot.textContent).toContain("卡片");
+    expect(view.shadowRoot.textContent).toContain("覆盖 JSON");
+    expect(view.shadowRoot.textContent).not.toContain("Layout Studio");
+
     const eventPromise = new Promise<CustomEvent>((resolve) =>
       view.addEventListener("yeelight-layout-overrides-changed", (event) => resolve(event as CustomEvent), { once: true })
     );
-    const xInput = [...view.shadowRoot.querySelectorAll("label")].find((label) => label.textContent?.trim().startsWith("x"))?.querySelector("input");
+    const xInput = [...view.shadowRoot.querySelectorAll("label")].find((label) => label.textContent?.trim().startsWith("左"))?.querySelector("input");
     if (!xInput) throw new Error("x input not found");
     xInput.value = "4";
     xInput.dispatchEvent(new Event("change"));
@@ -66,6 +104,44 @@ describe("canvas view", () => {
     expect(snippet).toContain('"layout_mode": "canvas"');
     expect(snippet).toContain('"layout_overrides"');
     expect(snippet).toContain('"overview.light"');
+  });
+
+  it("uses Home Assistant locale in layout studio and copy feedback", async () => {
+    const view = document.createElement(CANVAS_VIEW_TAG) as HTMLElement & {
+      setConfig: (config: Record<string, unknown>) => void;
+      cards: HTMLElement[];
+      hass: unknown;
+      lovelace: unknown;
+      updateComplete: Promise<boolean>;
+      shadowRoot: ShadowRoot;
+    };
+    view.setConfig({
+      title: "Overview",
+      path: "overview",
+      cards: [{ type: "tile", view_layout: { key: "overview.light", x: 0, y: 0, w: 6, h: 2 } }]
+    });
+    view.cards = [document.createElement("div")];
+    view.hass = { ...hass({}), locale: { language: "en" } };
+    view.lovelace = { editMode: true };
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async () => undefined
+      }
+    });
+    document.body.append(view);
+    await view.updateComplete;
+
+    expect(view.shadowRoot.textContent).toContain("Layout Studio");
+    expect(view.shadowRoot.textContent).toContain("Drag or resize cards");
+    expect(view.shadowRoot.textContent).toContain("Overrides JSON");
+    expect(view.shadowRoot.querySelector(".drag-handle")?.getAttribute("aria-label")).toBe("Move card");
+    expect(view.shadowRoot.querySelector(".resize-handle")?.getAttribute("aria-label")).toBe("Resize card");
+
+    view.shadowRoot.querySelector<HTMLButtonElement>(".studio-copy")?.click();
+    await Promise.resolve();
+    await view.updateComplete;
+    expect(view.shadowRoot.textContent).toContain("Layout JSON copied");
   });
 
   it("supports pointer drag and resize in layout studio", async () => {

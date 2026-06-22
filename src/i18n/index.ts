@@ -26,7 +26,7 @@ export function stateText(hass: HomeAssistant | undefined, state: string): strin
 }
 
 function isChinese(language: string | undefined): boolean {
-  return !language || /^zh\b|^zh-/i.test(language);
+  return !language || /^zh(?:$|[-_])/i.test(language);
 }
 
 function interpolate(template: string, values: Record<string, string | number>): string {

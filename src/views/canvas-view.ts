@@ -4,6 +4,7 @@ import { styleMap } from "lit/directives/style-map.js";
 import type { HomeAssistant, LovelaceCardConfig, LovelaceViewConfig } from "../types";
 import type { CanvasLayoutBox } from "../layout/layout-types";
 import { layoutFromPointerDelta, normalizeCanvasBox, type CanvasGridMetrics, type CanvasPointerMode } from "../layout/canvas-pointer";
+import { localize, type TranslationKey } from "../i18n";
 import { canvasViewStyles } from "./canvas-view.styles";
 
 export const CANVAS_VIEW_TAG = "yeelight-dashboard-canvas-view";
@@ -56,7 +57,7 @@ export class YeelightDashboardCanvasView extends LitElement {
   protected override render(): TemplateResult {
     const cards = this.cards || [];
     if (!cards.length) {
-      return html`<div class="empty">No matching cards yet.</div>`;
+      return html`<div class="empty">${localize(this.hass, "canvas.empty")}</div>`;
     }
     return html`
       ${this.layoutStudioEnabled() ? this.renderLayoutStudio() : ""}
@@ -73,7 +74,7 @@ export class YeelightDashboardCanvasView extends LitElement {
         class=${`slot ${editing ? "editing" : ""} ${active ? "active" : ""} ${this.pointer?.key === layout.key ? "dragging" : ""}`}
         style=${styleMap(slotStyle(layout))}
         data-layout-key=${layout.key}
-        @click=${() => this.selectLayout(layout.key)}
+        @click=${() => editing && this.selectLayout(layout.key)}
       >
         ${card} ${editing ? this.renderSlotToolbar(layout) : ""}
       </div>
@@ -96,17 +97,23 @@ export class YeelightDashboardCanvasView extends LitElement {
     return html`
       <div class="studio">
         <div class="studio-head">
-          <span class="studio-title"><ha-icon icon="mdi:gesture-tap-button"></ha-icon>Layout Studio</span>
+          <span class="studio-title"><ha-icon icon="mdi:gesture-tap-button"></ha-icon>${localize(this.hass, "canvas.studio_title")}</span>
+          <span class="studio-help">${localize(this.hass, "canvas.studio_help")}</span>
           <span class="studio-actions">
             ${this.studioFeedback ? html`<span class="studio-feedback">${this.studioFeedback}</span>` : ""}
-            <button class="studio-copy" title="Copy Strategy layout JSON" aria-label="Copy Strategy layout JSON" @click=${this.copyOverrides}>
+            <button
+              class="studio-copy"
+              title=${localize(this.hass, "canvas.copy_layout")}
+              aria-label=${localize(this.hass, "canvas.copy_layout")}
+              @click=${this.copyOverrides}
+            >
               <ha-icon icon="mdi:content-copy"></ha-icon>
             </button>
           </span>
         </div>
         <div class="studio-grid">
           <label>
-            Card
+            ${localize(this.hass, "canvas.card")}
             <select @change=${(event: Event) => this.selectLayout((event.target as HTMLSelectElement).value)}>
               ${layouts.map((layout) => html`<option value=${layout.key} ?selected=${layout.key === current.key}>${layout.key}</option>`)}
             </select>
@@ -114,7 +121,7 @@ export class YeelightDashboardCanvasView extends LitElement {
           ${(["x", "y", "w", "h", "z"] as const).map(
             (key) => html`
               <label>
-                ${key}
+                ${localize(this.hass, `editor.strategy.layout_${key}` as TranslationKey)}
                 <input
                   type="number"
                   .value=${String(current[key] ?? 0)}
@@ -125,7 +132,7 @@ export class YeelightDashboardCanvasView extends LitElement {
           )}
         </div>
         <details>
-          <summary><ha-icon icon="mdi:code-json"></ha-icon>Overrides</summary>
+          <summary><ha-icon icon="mdi:code-json"></ha-icon>${localize(this.hass, "canvas.overrides")}</summary>
           <textarea readonly .value=${this.layoutOverridesSnippet()}></textarea>
         </details>
       </div>
@@ -134,11 +141,11 @@ export class YeelightDashboardCanvasView extends LitElement {
 
   private renderSlotToolbar(layout: CanvasLayoutEntry): TemplateResult {
     return html`
-      <div class="slot-toolbar" aria-label="Layout controls">
+      <div class="slot-toolbar" aria-label=${localize(this.hass, "canvas.layout_controls")}>
         <button
           class="drag-handle"
-          title="Move card"
-          aria-label="Move card"
+          title=${localize(this.hass, "canvas.move_card")}
+          aria-label=${localize(this.hass, "canvas.move_card")}
           @pointerdown=${(event: PointerEvent) => this.startPointerEdit(event, layout.key, "move")}
         >
           <ha-icon icon="mdi:drag"></ha-icon>
@@ -146,8 +153,8 @@ export class YeelightDashboardCanvasView extends LitElement {
         <span class="slot-key">${layout.key}</span>
         <button
           class="resize-handle"
-          title="Resize card"
-          aria-label="Resize card"
+          title=${localize(this.hass, "canvas.resize_card")}
+          aria-label=${localize(this.hass, "canvas.resize_card")}
           @pointerdown=${(event: PointerEvent) => this.startPointerEdit(event, layout.key, "resize")}
         >
           <ha-icon icon="mdi:arrow-bottom-right"></ha-icon>
@@ -263,9 +270,9 @@ export class YeelightDashboardCanvasView extends LitElement {
     const payload = this.layoutOverridesSnippet();
     try {
       await navigator.clipboard?.writeText(payload);
-      this.studioFeedback = "Copied layout JSON";
+      this.studioFeedback = localize(this.hass, "canvas.copied_layout");
     } catch {
-      this.studioFeedback = payload;
+      this.studioFeedback = localize(this.hass, "canvas.copy_failed");
     }
     this.requestUpdate();
   };

@@ -6,7 +6,14 @@ import { actionFor, actionLabel, executeEntityAction, fireMoreInfo, turnOffLight
 import { gridOptionsForConfig } from "./grid-options";
 import { iconForKind, metricsFor } from "./card-meta";
 import { normalizeDashboardCardConfig, visibleLimit, type NormalizedDashboardCardConfig } from "./config";
+import { renderAreaCard, renderAreaPill, renderStatusGroup } from "./internal-card-areas";
+import { renderAirBoard, renderClimateBoard, renderWaterBoard } from "./internal-card-comfort";
+import { renderMetric } from "./internal-card-metrics";
+import { renderEnergyBoard, renderInfrastructureBoard, renderPowerBoard } from "./internal-card-operations";
+import { renderCameraBoard, renderCameraWallBoard, renderMediaBoard, renderPresenceBoard, renderSecurityBoard } from "./internal-card-phase-a";
+import { renderHealthBoard } from "./internal-card-health";
 import { renderDevicesBoard, renderEnvironmentBoard, renderRoutinesBoard } from "./internal-card-product";
+import { renderImageBoard, renderNoteBoard, renderPanelActionsBoard } from "./internal-card-utility";
 import type {
   DashboardAreaSummary,
   DashboardCardKind,
@@ -60,9 +67,10 @@ export class YeelightDashboardBaseCard extends LitElement {
     const summary = summarizeEntities(this.hass, this.config.entities || []);
     const areas = this.config.show_area_summaries ? this.areaSummaries() : [];
     const title = this.config.title || localize(this.hass, `card.${this.kind}.title`);
+    const subtypeClass = this.config.subtype ? ` subtype-${this.config.subtype.replace(/[^a-z0-9-]/gi, "-")}` : "";
     return html`
       <ha-card>
-        <div class=${`card ${this.kind} density-${this.config.density} variant-${this.config.variant}`} aria-label=${title}>
+        <div class=${`card ${this.kind} density-${this.config.density} variant-${this.config.variant}${subtypeClass}`} aria-label=${title}>
           ${this.renderHeader(title)} ${this.renderMetrics(summary, areas)} ${this.renderBody(summary, areas)}
           ${this.feedback ? html`<div class="feedback" role="status">${this.feedback}</div>` : nothing}
         </div>
@@ -90,16 +98,27 @@ export class YeelightDashboardBaseCard extends LitElement {
   private renderMetrics(summary: DashboardCardSummary, areas: DashboardAreaSummary[]): TemplateResult | typeof nothing {
     if (!this.config.show_metrics) return nothing;
     const metrics = metricsFor(this.hass, this.kind, summary, areas);
-    return html`
-      <div class=${`metrics count-${metrics.length}`}>
-        ${metrics.map(({ value, label, tone }) => html`<div class=${`metric ${tone}`}><strong>${value}</strong><span>${label}</span></div>`)}
-      </div>
-    `;
+    return html`<div class=${`metrics count-${metrics.length}`}>${metrics.map((metric) => renderMetric(this, this.hass, metric))}</div>`;
   }
 
   private renderBody(summary: DashboardCardSummary, areas: DashboardAreaSummary[]): TemplateResult {
     if (!summary.entities.length) {
       if (this.kind === "rooms" && areas.length) return this.renderRooms(areas);
+      if (this.kind === "media") return renderMediaBoard(this, summary, this.config.subtype, this.limit(5));
+      if (this.kind === "camera") return renderCameraBoard(this, summary, this.config.subtype, this.limit(4));
+      if (this.kind === "cameraWall") return renderCameraWallBoard(this, summary, this.limit(6));
+      if (this.kind === "climate") return renderClimateBoard(this, summary, this.config.subtype, this.limit(5));
+      if (this.kind === "air") return renderAirBoard(this, summary, this.config.subtype, this.limit(5), this.config.show_actions);
+      if (this.kind === "water") return renderWaterBoard(this, summary, this.limit(5));
+      if (this.kind === "power") return renderPowerBoard(this, summary, this.config.subtype, this.limit(5), this.config.show_actions);
+      if (this.kind === "energy") return renderEnergyBoard(this, summary, this.config.subtype, this.limit(5));
+      if (this.kind === "infrastructure") return renderInfrastructureBoard(this, summary, this.config.subtype, this.limit(5));
+      if (this.kind === "security") return renderSecurityBoard(this, summary, this.config.subtype, this.limit(5));
+      if (this.kind === "presence") return renderPresenceBoard(this, summary, this.config.subtype, this.limit(5));
+      if (this.kind === "panelActions") return renderPanelActionsBoard(this, summary, this.limit(6), this.config.show_actions, this.config);
+      if (this.kind === "image") return renderImageBoard(this, summary, this.config.subtype, this.config, this.limit(6));
+      if (this.kind === "note") return renderNoteBoard(this, summary, this.config, this.limit(4));
+      if (this.kind === "health") return renderHealthBoard(this, summary, this.config.subtype, this.limit(4), (entity) => this.renderEntityRow(entity));
       return html`<div class="empty">${localize(this.hass, this.kind === "light" ? "empty.no_lights" : "empty.no_entities")}</div>`;
     }
     if (this.kind === "hero") return this.renderHero(summary, areas);
@@ -108,14 +127,54 @@ export class YeelightDashboardBaseCard extends LitElement {
     if (this.kind === "light") return this.renderLights(summary);
     if (this.kind === "rooms") return this.renderRooms(areas);
     if (this.kind === "room") return this.renderRoom(summary, areas[0]);
-    if (this.kind === "devices") return renderDevicesBoard(this, summary, areas, this.limit(5), this.config.show_actions, (area) => this.renderAreaPill(area));
-    if (this.kind === "routines") return renderRoutinesBoard(this, summary, this.limit(5), this.config.show_actions, (entity) => this.renderActionTile(entity));
-    if (this.kind === "environment") return renderEnvironmentBoard(this, summary, this.limit(6));
+    if (this.kind === "devices") return renderDevicesBoard(this, summary, areas, this.limit(5), this.config.show_actions, (area) => this.renderAreaPill(area), this.config.subtype);
+    if (this.kind === "routines") return renderRoutinesBoard(this, summary, this.limit(5), this.config.show_actions, (entity) => this.renderActionTile(entity), this.config.subtype);
+    if (this.kind === "environment") return renderEnvironmentBoard(this, summary, this.limit(6), this.config.subtype);
+    if (this.kind === "media") return renderMediaBoard(this, summary, this.config.subtype, this.limit(5));
+    if (this.kind === "camera") return renderCameraBoard(this, summary, this.config.subtype, this.limit(4));
+    if (this.kind === "cameraWall") return renderCameraWallBoard(this, summary, this.limit(6));
+    if (this.kind === "climate") return renderClimateBoard(this, summary, this.config.subtype, this.limit(5));
+    if (this.kind === "air") return renderAirBoard(this, summary, this.config.subtype, this.limit(5), this.config.show_actions);
+    if (this.kind === "water") return renderWaterBoard(this, summary, this.limit(5));
+    if (this.kind === "power") return renderPowerBoard(this, summary, this.config.subtype, this.limit(5), this.config.show_actions);
+    if (this.kind === "energy") return renderEnergyBoard(this, summary, this.config.subtype, this.limit(5));
+    if (this.kind === "infrastructure") return renderInfrastructureBoard(this, summary, this.config.subtype, this.limit(5));
+    if (this.kind === "security") return renderSecurityBoard(this, summary, this.config.subtype, this.limit(5));
+    if (this.kind === "presence") return renderPresenceBoard(this, summary, this.config.subtype, this.limit(5));
+    if (this.kind === "panelActions") return renderPanelActionsBoard(this, summary, this.limit(6), this.config.show_actions, this.config);
+    if (this.kind === "image") return renderImageBoard(this, summary, this.config.subtype, this.config, this.limit(6));
+    if (this.kind === "note") return renderNoteBoard(this, summary, this.config, this.limit(4));
     if (this.kind === "ecosystem") return this.renderEcosystem(summary, areas);
-    return this.renderHealth(summary);
+    return renderHealthBoard(this, summary, this.config.subtype, this.limit(4), (entity) => this.renderEntityRow(entity));
   }
 
   private renderHero(summary: DashboardCardSummary, areas: DashboardAreaSummary[]): TemplateResult {
+    if (this.config.subtype === "time") {
+      const locale = this.hass?.locale?.language || "zh-CN";
+      const now = new Date();
+      return html`
+        <div class="hero-board">
+          <div class="hero-copy">
+            <span class="hero-kicker">${localize(this.hass, "label.home_time")}</span>
+            <strong>${now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}</strong>
+            <span>${now.toLocaleDateString(locale, { weekday: "long", month: "short", day: "numeric" })}</span>
+          </div>
+        ${areas.length ? html`<div class="area-strip">${areas.slice(0, this.limit(4)).map((area) => this.renderAreaPill(area))}</div>` : nothing}
+        </div>
+      `;
+    }
+    if (this.config.subtype === "quote") {
+      return html`
+        <div class="hero-board">
+          <div class="hero-copy">
+            <span class="hero-kicker">${localize(this.hass, "label.daily_quote")}</span>
+            <strong>${this.config.content || localize(this.hass, "label.daily_quote_default")}</strong>
+            <span>${summary.activeLights.length} ${localize(this.hass, "metric.lights_on")} · ${summary.issues.length} ${localize(this.hass, "metric.issues")}</span>
+          </div>
+          ${summary.routines.length ? html`<div class="quick-grid hero-actions">${summary.routines.slice(0, this.limit(3)).map((entity) => this.renderActionTile(entity))}</div>` : nothing}
+        </div>
+      `;
+    }
     const limit = this.limit(4);
     const headline = summary.activeLights.length
       ? `${summary.activeLights.length} ${localize(this.hass, "metric.lights_on")}`
@@ -136,13 +195,13 @@ export class YeelightDashboardBaseCard extends LitElement {
   private renderStatus(summary: DashboardCardSummary, areas: DashboardAreaSummary[]): TemplateResult {
     const topAreas = areas.slice(0, this.limit(3));
     const controlGroups = [
-      { icon: "mdi:lightbulb-group", label: localize(this.hass, "metric.lights"), value: summary.lights.length },
-      { icon: "mdi:gesture-tap-button", label: localize(this.hass, "metric.routines"), value: summary.routines.length },
-      { icon: "mdi:tune-variant", label: localize(this.hass, "metric.controls"), value: summary.controllable.length }
+      { icon: "mdi:lightbulb-group", label: localize(this.hass, "metric.lights"), value: summary.lights.length, target: { viewPath: "lighting", nativePath: "/light?historyBack=1" } },
+      { icon: "mdi:gesture-tap-button", label: localize(this.hass, "metric.routines"), value: summary.routines.length, target: { viewPath: "scenes", nativePath: "/config/scene/dashboard?historyBack=1" } },
+      { icon: "mdi:tune-variant", label: localize(this.hass, "metric.controls"), value: summary.controllable.length, target: { viewPath: "areas", nativePath: "/config/entities?historyBack=1" } }
     ];
     return html`
       <div class="status-board">
-        <div class="status-groups">${controlGroups.map((group) => this.renderStatusGroup(group.icon, group.label, group.value))}</div>
+        <div class="status-groups">${controlGroups.map((group) => renderStatusGroup(this.hass, group.icon, group.label, group.value, group.target))}</div>
         ${topAreas.length ? html`<div class="area-strip compact-strip">${topAreas.map((area) => this.renderAreaPill(area))}</div>` : nothing}
       </div>
     `;
@@ -166,7 +225,20 @@ export class YeelightDashboardBaseCard extends LitElement {
 
   private renderLights(summary: DashboardCardSummary): TemplateResult {
     if (!summary.lights.length) return html`<div class="empty">${localize(this.hass, "empty.no_lights")}</div>`;
-    const lights = [...summary.activeLights, ...summary.lights.filter((entity) => entity.state !== "on")].slice(0, this.limit(2));
+    const allLights = [...summary.activeLights, ...summary.lights.filter((entity) => entity.state !== "on")];
+    const lights = allLights.slice(0, this.limit(this.config.subtype === "status" ? 4 : 2));
+    if (this.config.subtype === "status") {
+      return html`
+        <div class="section-label">${localize(this.hass, "label.light_status")}</div>
+        <div class="entity-list compact">${lights.map((entity) => this.renderEntityRow(entity))}</div>
+      `;
+    }
+    if (this.config.subtype === "devices") {
+      return html`
+        <div class="section-label">${localize(this.hass, "label.light_devices")}</div>
+        <div class="entity-list compact">${allLights.slice(0, this.limit(8)).map((entity) => this.renderEntityRow(entity))}</div>
+      `;
+    }
     return html`
       <div class="section-label">${localize(this.hass, "label.active_lights")}</div>
       <div class="tile-grid">${lights.map((entity) => this.renderEntityTile(entity))}</div>
@@ -193,82 +265,38 @@ export class YeelightDashboardBaseCard extends LitElement {
 
   private renderEcosystem(summary: DashboardCardSummary, areas: DashboardAreaSummary[]): TemplateResult {
     const groups = [
-      { icon: "mdi:home-group", label: localize(this.hass, "metric.rooms"), value: areas.length },
-      { icon: "mdi:checkbox-marked-circle-outline", label: localize(this.hass, "metric.online"), value: summary.online.length },
-      { icon: "mdi:alert-circle-outline", label: localize(this.hass, "metric.issues"), value: summary.issues.length }
+      { icon: "mdi:home-group", label: localize(this.hass, "metric.rooms"), value: areas.length, target: { viewPath: "areas", nativePath: "/config/areas/dashboard?historyBack=1" } },
+      { icon: "mdi:checkbox-marked-circle-outline", label: localize(this.hass, "metric.online"), value: summary.online.length, target: { viewPath: "health", nativePath: "/config/entities?historyBack=1" } },
+      { icon: "mdi:alert-circle-outline", label: localize(this.hass, "metric.issues"), value: summary.issues.length, target: { viewPath: "health", nativePath: "/config/repairs?historyBack=1" } }
     ];
     const focusAreas = areas.slice(0, this.limit(2));
     return html`
       <div class="ecosystem-board">
-        <div class="status-groups">${groups.map((group) => this.renderStatusGroup(group.icon, group.label, group.value))}</div>
+        <div class="status-groups">${groups.map((group) => renderStatusGroup(this.hass, group.icon, group.label, group.value, group.target))}</div>
         ${focusAreas.length ? html`<div class="room-grid">${focusAreas.map((area) => this.renderAreaCard(area))}</div>` : nothing}
       </div>
     `;
   }
 
-  private renderHealth(summary: DashboardCardSummary): TemplateResult {
-    const issues = summary.issues.slice(0, this.limit(2));
-    if (!issues.length) {
-      return html`
-        <div class="health-ok">
-          <ha-icon icon="mdi:check-circle-outline"></ha-icon>
-          <span>${localize(this.hass, "empty.no_issues")}</span>
-        </div>
-      `;
-    }
-    return html`
-      <div class="section-label">${localize(this.hass, "label.issue_list")}</div>
-      <div class="entity-list compact">${issues.map((entity) => this.renderEntityRow(entity))}</div>
-    `;
-  }
-
-  private renderStatusGroup(icon: string, label: string, value: number): TemplateResult {
-    return html`
-      <div class="status-group">
-        <ha-icon .icon=${icon}></ha-icon>
-        <strong>${value}</strong>
-        <span>${label}</span>
-      </div>
-    `;
-  }
-
   private renderAreaCard(area: DashboardAreaSummary): TemplateResult {
-    const progress = area.lightCount ? Math.round((area.activeLightCount / area.lightCount) * 100) : 0;
-    return html`
-      <div class=${`area-card ${area.issueCount ? "warning" : ""}`} style=${`--area-progress:${progress}%`}>
-        <div class="area-card-head">
-          <strong>${area.name}</strong>
-          ${area.issueCount ? html`<span>${area.issueCount}</span>` : nothing}
-        </div>
-        <div class="area-card-stats">
-          <span>${area.activeLightCount}/${area.lightCount} ${localize(this.hass, "metric.lights")}</span>
-          <span>${area.entityCount} ${localize(this.hass, "metric.entities")}</span>
-        </div>
-        <div class="area-progress" aria-hidden="true"><span></span></div>
-      </div>
-    `;
+    return renderAreaCard(this.hass, area);
   }
 
   private renderAreaPill(area: DashboardAreaSummary): TemplateResult {
-    return html`
-      <div class="area-pill">
-        <strong>${area.name}</strong>
-        <span>${area.activeLightCount} ${localize(this.hass, "metric.lights_on")} · ${area.entityCount} ${localize(this.hass, "metric.entities")}</span>
-      </div>
-    `;
+    return renderAreaPill(this.hass, area);
   }
 
   private renderEntityTile(entity: NormalizedEntity): TemplateResult {
     const action = this.config.show_actions ? actionFor(entity) : "";
     return html`
       <div class=${`entity-tile ${entity.state === "on" ? "active" : ""} ${entity.available ? "" : "muted"}`}>
-        <button class="tile-icon" aria-label=${localize(this.hass, "action.more_info")} @click=${() => fireMoreInfo(this, entity.entityId)}>
+        <button class="entity-main entity-tile-main" type="button" aria-label=${`${entity.name} · ${localize(this.hass, "action.more_info")}`} @click=${() => fireMoreInfo(this, entity.entityId)}>
           <ha-icon .icon=${entity.icon}></ha-icon>
+          <span>
+            <strong>${entity.name}</strong>
+            <small>${stateText(this.hass, entity.state)}</small>
+          </span>
         </button>
-        <div class="entity-text">
-          <strong>${entity.name}</strong>
-          <span>${stateText(this.hass, entity.state)}</span>
-        </div>
         ${action
           ? html`<button class="chip-action" ?disabled=${!entity.available || entity.readOnly} @click=${() => this.runEntityAction(entity, action)}>${actionLabel(this.hass, entity, action)}</button>`
           : nothing}
@@ -280,11 +308,16 @@ export class YeelightDashboardBaseCard extends LitElement {
     const action = this.config.show_actions ? actionFor(entity) : "";
     if (!action) return this.renderEntityRow(entity);
     return html`
-      <button class="action-tile" ?disabled=${!entity.available || entity.readOnly} @click=${() => this.runEntityAction(entity, action)}>
-        <ha-icon .icon=${entity.icon}></ha-icon>
-        <strong>${entity.name}</strong>
-        <span>${actionLabel(this.hass, entity, action)}</span>
-      </button>
+      <div class=${`action-tile domain-${entity.domain} ${entity.available ? "" : "muted"}`}>
+        <button class="action-tile-main" type="button" @click=${() => fireMoreInfo(this, entity.entityId)}>
+          <ha-icon .icon=${entity.icon}></ha-icon>
+          <strong>${entity.name}</strong>
+          <span>${stateText(this.hass, entity.state)}</span>
+        </button>
+        <button class="action-tile-run" type="button" ?disabled=${!entity.available || entity.readOnly} @click=${() => this.runEntityAction(entity, action)}>
+          ${actionLabel(this.hass, entity, action)}
+        </button>
+      </div>
     `;
   }
 
@@ -292,13 +325,13 @@ export class YeelightDashboardBaseCard extends LitElement {
     const action = this.config.show_actions ? actionFor(entity) : "";
     return html`
       <div class=${`entity-row ${entity.available ? "" : "muted"}`}>
-        <button class="icon-button" aria-label=${localize(this.hass, "action.more_info")} @click=${() => fireMoreInfo(this, entity.entityId)}>
+        <button class="entity-main entity-row-main" type="button" aria-label=${`${entity.name} · ${localize(this.hass, "action.more_info")}`} @click=${() => fireMoreInfo(this, entity.entityId)}>
           <ha-icon .icon=${entity.icon}></ha-icon>
+          <span>
+            <strong>${entity.name}</strong>
+            <small>${stateText(this.hass, entity.state)}</small>
+          </span>
         </button>
-        <div class="entity-text">
-          <strong>${entity.name}</strong>
-          <span>${stateText(this.hass, entity.state)}</span>
-        </div>
         ${action
           ? html`<button class="text-action" ?disabled=${!entity.available || entity.readOnly} @click=${() => this.runEntityAction(entity, action)}>${actionLabel(this.hass, entity, action)}</button>`
           : nothing}

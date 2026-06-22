@@ -21,6 +21,7 @@ describe("strategy editor", () => {
     editor.shadowRoot.querySelector("select")!.dispatchEvent(new Event("change"));
     const event = await eventPromise;
     expect(event.detail.config.profile).toBe("lighting");
+    expect(event.detail.config.type).toBe("custom:yeelight-dashboard");
   });
 
   it("renders localized strategy editor labels", async () => {
@@ -76,6 +77,45 @@ describe("strategy editor", () => {
     });
   });
 
+  it("offers visual dashboard profile presets that preserve scoped settings", async () => {
+    const editor = document.createElement(EDITOR_TAG) as HTMLElement & {
+      setConfig: (config: Record<string, unknown>) => void;
+      hass: unknown;
+      updateComplete: Promise<boolean>;
+      shadowRoot: ShadowRoot;
+    };
+    editor.hass = hass({});
+    editor.setConfig({
+      profile: "standard",
+      area_mode: "selected",
+      selected_areas: ["living"],
+      layout_overrides: { overview: { "overview.hero": { x: 1, y: 2, w: 12, h: 3 } } }
+    });
+    document.body.append(editor);
+    await editor.updateComplete;
+
+    expect(editor.shadowRoot.textContent).toContain("仪表盘模式预设");
+    expect(editor.shadowRoot.textContent).toContain("面向墙面平板和中控屏");
+    expect(editor.shadowRoot.textContent).toContain("当前模式");
+    expect(editor.shadowRoot.querySelectorAll(".profile-preset").length).toBe(4);
+
+    const eventPromise = nextConfigEvent(editor);
+    editor.shadowRoot.querySelector<HTMLButtonElement>("[data-profile='panel']")?.click();
+    const event = await eventPromise;
+
+    expect(event.detail.config).toMatchObject({
+      profile: "panel",
+      theme: "Yeelight Panel",
+      scope: "yeelight_and_area",
+      layout_mode: "canvas",
+      area_mode: "selected",
+      selected_areas: ["living"],
+      layout_overrides: { overview: { "overview.hero": { x: 1, y: 2, w: 12, h: 3 } } },
+      preferences: { density: "compact", scene_limit: 6 },
+      views: { health: false, media: false }
+    });
+  });
+
   it("edits views, preferences and selected areas", async () => {
     const editor = document.createElement(EDITOR_TAG) as HTMLElement & {
       setConfig: (config: Record<string, unknown>) => void;
@@ -119,6 +159,46 @@ describe("strategy editor", () => {
     editor.setConfig({ layout_mode: "canvas" });
     document.body.append(editor);
     await editor.updateComplete;
+
+    expect(editor.shadowRoot.textContent).toContain("画布布局表单");
+    expect(editor.shadowRoot.textContent).toContain("快速位置");
+    expect(editor.shadowRoot.textContent).toContain("占位预览");
+    expect(editor.shadowRoot.textContent).toContain("高级 JSON");
+
+    buttonByText(editor.shadowRoot, "右半").click();
+    await editor.updateComplete;
+    expect(editor.shadowRoot.textContent).toContain("左 6 · 上 0 · 6 x 4");
+
+    const presetEvent = nextConfigEvent(editor);
+    buttonByText(editor.shadowRoot, "应用布局").click();
+    expect((await presetEvent).detail.config.layout_overrides).toEqual({
+      overview: {
+        "overview.hero": { x: 6, y: 0, w: 6, h: 4, z: 0 }
+      }
+    });
+    await editor.updateComplete;
+
+    const formEvent = nextConfigEvent(editor);
+    const layoutInputs = layoutNumberInputs(editor.shadowRoot);
+    changeInput(layoutInputs[0], "1");
+    changeInput(layoutInputs[1], "2");
+    changeInput(layoutInputs[2], "12");
+    changeInput(layoutInputs[3], "3");
+    buttonByText(editor.shadowRoot, "应用布局").click();
+    expect((await formEvent).detail.config.layout_overrides).toEqual({
+      overview: {
+        "overview.hero": { x: 1, y: 2, w: 12, h: 3, z: 0 }
+      }
+    });
+    await editor.updateComplete;
+    expect(editor.shadowRoot.textContent).toContain("布局已应用");
+    expect(buttonByText(editor.shadowRoot, "overview · overview.hero")).toBeTruthy();
+
+    const removeEvent = nextConfigEvent(editor);
+    buttonByText(editor.shadowRoot, "移除该卡片布局").click();
+    expect((await removeEvent).detail.config.layout_overrides).toBeUndefined();
+    await editor.updateComplete;
+    expect(editor.shadowRoot.textContent).toContain("卡片布局已移除");
 
     const layoutEvent = nextConfigEvent(editor);
     const textarea = editor.shadowRoot.querySelector("textarea");
@@ -215,8 +295,25 @@ function checkboxByText(root: ShadowRoot, text: string): HTMLInputElement {
 }
 
 function inputByText(root: ShadowRoot, text: string): HTMLInputElement {
-  const label = [...root.querySelectorAll("label")].find((item) => item.textContent?.includes(text));
+  const label = [...root.querySelectorAll("label")].find((item) => item.querySelector("span")?.textContent?.trim() === text || item.textContent?.includes(text));
   const input = label?.querySelector<HTMLInputElement>("input");
   if (!input) throw new Error(`input not found: ${text}`);
   return input;
+}
+
+function layoutNumberInputs(root: ShadowRoot): HTMLInputElement[] {
+  const inputs = [...root.querySelectorAll<HTMLInputElement>(".layout-grid input[type='number']")];
+  if (inputs.length < 5) throw new Error("layout number inputs not found");
+  return inputs;
+}
+
+function changeInput(input: HTMLInputElement, value: string): void {
+  input.value = value;
+  input.dispatchEvent(new Event("change"));
+}
+
+function buttonByText(root: ShadowRoot, text: string): HTMLButtonElement {
+  const button = [...root.querySelectorAll("button")].find((item) => item.textContent?.trim() === text);
+  if (!button) throw new Error(`button not found: ${text}`);
+  return button;
 }

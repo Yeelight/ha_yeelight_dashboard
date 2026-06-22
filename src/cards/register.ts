@@ -1,7 +1,6 @@
 import { localizeLanguage, type TranslationKey } from "../i18n";
 import { createDashboardCardClass } from "./internal-card";
 import { YeelightDashboardCardEditor } from "./card-editor";
-import { CARD_EDITOR_PREVIEW_TAG, YeelightDashboardCardEditorPreview } from "./card-editor-preview";
 import { DASHBOARD_CARD_DEFINITIONS, type DashboardCardDefinition } from "./card-definitions";
 import { entitySuggestion, stubConfig } from "./card-defaults";
 import type { HomeAssistant } from "./types";
@@ -12,9 +11,6 @@ const DOCUMENTATION_URL = "https://github.com/Yeelight/ha_yeelight_dashboard";
 export function registerDashboardCards(): void {
   if (!customElements.get(CARD_EDITOR_TAG)) {
     customElements.define(CARD_EDITOR_TAG, YeelightDashboardCardEditor);
-  }
-  if (!customElements.get(CARD_EDITOR_PREVIEW_TAG)) {
-    customElements.define(CARD_EDITOR_PREVIEW_TAG, YeelightDashboardCardEditorPreview);
   }
   for (const definition of DASHBOARD_CARD_DEFINITIONS) {
     if (!customElements.get(definition.tag)) {

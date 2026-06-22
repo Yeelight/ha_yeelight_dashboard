@@ -67,6 +67,91 @@ describe("internal cards", () => {
     expect(filtered.filteredTotal).toBe(1);
   });
 
+  it("keeps presence and security picker suggestions semantic-scoped", () => {
+    const states = {
+      "binary_sensor.motion": entity("binary_sensor.motion", "on", { friendly_name: "Hall Motion", device_class: "motion" }),
+      "binary_sensor.battery": entity("binary_sensor.battery", "off", { friendly_name: "Battery Low", device_class: "battery" }),
+      "lock.front": entity("lock.front", "locked", { friendly_name: "Front Door" }),
+      "sensor.random": entity("sensor.random", "42", { friendly_name: "Random Sensor" })
+    };
+    const presenceOptions = buildEntityOptions(hass(states), { type: "custom:yeelight-dashboard-presence-card" });
+    expect(presenceOptions.find((option) => option.entityId === "binary_sensor.motion")?.recommended).toBe(true);
+    expect(presenceOptions.find((option) => option.entityId === "binary_sensor.battery")?.recommended).toBe(false);
+
+    const securityOptions = buildEntityOptions(hass(states), { type: "custom:yeelight-dashboard-security-card" });
+    expect(securityOptions.find((option) => option.entityId === "lock.front")?.recommended).toBe(true);
+    expect(securityOptions.find((option) => option.entityId === "sensor.random")?.recommended).toBe(false);
+  });
+
+  it("keeps climate, air and water picker suggestions semantic-scoped", () => {
+    const states = {
+      "climate.living": entity("climate.living", "cool", { friendly_name: "Living AC" }),
+      "fan.ceiling": entity("fan.ceiling", "on", { friendly_name: "Ceiling Fan" }),
+      "humidifier.bedroom": entity("humidifier.bedroom", "off", { friendly_name: "Bedroom Humidifier" }),
+      "sensor.pm25": entity("sensor.pm25", "18", { friendly_name: "Air PM25", device_class: "pm25" }),
+      "sensor.water_filter": entity("sensor.water_filter", "80", { friendly_name: "Water Filter" }),
+      "sensor.random": entity("sensor.random", "42", { friendly_name: "Random Sensor" })
+    };
+
+    const climateOptions = buildEntityOptions(hass(states), { type: "custom:yeelight-dashboard-climate-card" });
+    expect(climateOptions.find((option) => option.entityId === "climate.living")?.recommended).toBe(true);
+    expect(climateOptions.find((option) => option.entityId === "sensor.random")?.recommended).toBe(false);
+
+    const airOptions = buildEntityOptions(hass(states), { type: "custom:yeelight-dashboard-air-card" });
+    expect(airOptions.find((option) => option.entityId === "fan.ceiling")?.recommended).toBe(true);
+    expect(airOptions.find((option) => option.entityId === "humidifier.bedroom")?.recommended).toBe(true);
+    expect(airOptions.find((option) => option.entityId === "sensor.pm25")?.recommended).toBe(true);
+    expect(airOptions.find((option) => option.entityId === "sensor.random")?.recommended).toBe(false);
+
+    const waterOptions = buildEntityOptions(hass(states), { type: "custom:yeelight-dashboard-water-card" });
+    expect(waterOptions.find((option) => option.entityId === "sensor.water_filter")?.recommended).toBe(true);
+    expect(waterOptions.find((option) => option.entityId === "sensor.random")?.recommended).toBe(false);
+  });
+
+  it("keeps power, energy and infrastructure picker suggestions semantic-scoped", () => {
+    const states = {
+      "switch.wall_plug": entity("switch.wall_plug", "on", { friendly_name: "Wall Plug" }),
+      "sensor.power": entity("sensor.power", "42", { friendly_name: "Plug Power", device_class: "power" }),
+      "sensor.energy": entity("sensor.energy", "12", { friendly_name: "Solar Energy", device_class: "energy" }),
+      "sensor.server_cpu": entity("sensor.server_cpu", "32", { friendly_name: "Server CPU" }),
+      "sensor.random": entity("sensor.random", "42", { friendly_name: "Random Sensor" })
+    };
+
+    const powerOptions = buildEntityOptions(hass(states), { type: "custom:yeelight-dashboard-power-card" });
+    expect(powerOptions.find((option) => option.entityId === "switch.wall_plug")?.recommended).toBe(true);
+    expect(powerOptions.find((option) => option.entityId === "sensor.power")?.recommended).toBe(true);
+    expect(powerOptions.find((option) => option.entityId === "sensor.random")?.recommended).toBe(false);
+
+    const energyOptions = buildEntityOptions(hass(states), { type: "custom:yeelight-dashboard-energy-card" });
+    expect(energyOptions.find((option) => option.entityId === "sensor.energy")?.recommended).toBe(true);
+    expect(energyOptions.find((option) => option.entityId === "sensor.random")?.recommended).toBe(false);
+
+    const infrastructureOptions = buildEntityOptions(hass(states), { type: "custom:yeelight-dashboard-infrastructure-card" });
+    expect(infrastructureOptions.find((option) => option.entityId === "sensor.server_cpu")?.recommended).toBe(true);
+    expect(infrastructureOptions.find((option) => option.entityId === "sensor.random")?.recommended).toBe(false);
+  });
+
+  it("keeps Phase D picker suggestions focused on actions, cameras and notes", () => {
+    const states = {
+      "scene.movie": entity("scene.movie", "off", { friendly_name: "Movie Scene" }),
+      "camera.door": entity("camera.door", "streaming", { friendly_name: "Door Camera" }),
+      "sensor.note": entity("sensor.note", "ok", { friendly_name: "Reminder Note" }),
+      "sensor.random": entity("sensor.random", "42", { friendly_name: "Random Sensor" })
+    };
+
+    const actionOptions = buildEntityOptions(hass(states), { type: "custom:yeelight-dashboard-panel-actions-card" });
+    expect(actionOptions.find((option) => option.entityId === "scene.movie")?.recommended).toBe(true);
+    expect(actionOptions.find((option) => option.entityId === "sensor.random")?.recommended).toBe(false);
+
+    const imageOptions = buildEntityOptions(hass(states), { type: "custom:yeelight-dashboard-image-card" });
+    expect(imageOptions.find((option) => option.entityId === "camera.door")?.recommended).toBe(true);
+    expect(imageOptions.find((option) => option.entityId === "sensor.note")?.recommended).toBe(false);
+
+    const noteOptions = buildEntityOptions(hass(states), { type: "custom:yeelight-dashboard-note-card" });
+    expect(noteOptions.find((option) => option.entityId === "sensor.note")?.recommended).toBe(true);
+    expect(noteOptions.find((option) => option.entityId === "sensor.random")?.recommended).toBe(false);
+  });
+
   it("respects take-control card display options", async () => {
     const states = {
       "light.one": entity("light.one", "on", { friendly_name: "One" }),

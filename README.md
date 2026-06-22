@@ -24,10 +24,14 @@ It is not a backend device integration, not a runtime dependency on `ha_yeelight
 - Reads Area, Floor, Device, Entity, and Label registries through standard `hass.callWS`.
 - Reads live state from `hass.states`.
 - Identifies Yeelight entities through `entityRegistry.platform === "yeelight_pro"` or device metadata, never through friendly-name keywords.
-- Provides product composite cards such as `custom:yeelight-dashboard-hero-card`, `status-card`, `notice-card`, `light-card`, `rooms-card`, `room-card`, `devices-card`, `routines-card`, `environment-card`, `ecosystem-card`, and `health-card`; they register HA visual editors through `window.customCards` for take-control/manual editing, but remain dashboard-focused and do not replace the lightweight `ha_yeelight_cards` package.
+- Provides product composite cards such as `custom:yeelight-dashboard-hero-card`, `status-card`, `notice-card`, `light-card`, `rooms-card`, `room-card`, `devices-card`, `routines-card`, `environment-card`, `climate-card`, `air-card`, `water-card`, `power-card`, `energy-card`, `infrastructure-card`, `media-card`, `camera-card`, `camera-wall-card`, `security-card`, `presence-card`, `panel-actions-card`, `image-card`, `note-card`, `ecosystem-card`, and `health-card`; they register HA visual editors through `window.customCards` for take-control/manual editing, but remain dashboard-focused and do not replace the lightweight `ha_yeelight_cards` package.
+- Migrates high-value legacy widgets as card `subtype` modes instead of reintroducing the old runtime. This includes the original core modes such as panel hero, time, daily quote, favorite lights, light status, device list/single, quick scenes, scripts, automations, weather, illuminance, updates, events and history, plus the media/camera/security/presence/climate/air/water/power/energy/infrastructure/panel-actions/image/note families.
+- Every migrated product subtype is exposed through the HA visual card editor, with localized labels, recommended entity domains, grid sizing, display presets, HA's right-side card preview, and a compact section-size preview. HA-native media, camera, weather, sensor, area, cover, vacuum, calendar, todo, logbook, map, history and energy capabilities remain native recipes where appropriate.
 - Keeps a generated legacy inventory under `docs/legacy-inventory/`.
 
 ## Installation
+
+`ha_yeelight_dashboard` is a frontend dashboard strategy. Installing the resource registers the strategy and dashboard cards, but it does not create a dashboard automatically. Create one Yeelight dashboard after the resource is loaded; from that point the strategy generates views and cards from the current Home Assistant registries and `hass.states`.
 
 Install the built frontend resource:
 
@@ -43,7 +47,14 @@ url: /local/ha_yeelight_dashboard.js
 type: module
 ```
 
-Then create a dashboard with:
+First use on Home Assistant 2026.5+:
+
+1. Install the resource through HACS or add the manual resource above.
+2. Reload the browser so HA loads the module.
+3. Go to dashboards, create a new dashboard, and choose `Yeelight Dashboard` under `Community dashboards`.
+4. Use the Strategy Editor to choose the profile, theme, scope, visible views, area selection, and `sections` or `canvas` layout.
+
+YAML fallback:
 
 ```yaml
 strategy:
@@ -72,6 +83,8 @@ Default `sections` dashboards use Home Assistant's native section editing, drag 
 ```
 
 On Home Assistant 2026.5+, the strategy is also exposed in the new dashboard dialog under Community dashboards after the resource is loaded.
+
+The default profile uses the `Yeelight Minimal` theme from `ha_yeelight_themes`. The dashboard remains usable without the theme package; Home Assistant will fall back to the active/default theme variables, and the Strategy Editor shows a notice when the selected Yeelight theme is not available.
 
 ## Development
 

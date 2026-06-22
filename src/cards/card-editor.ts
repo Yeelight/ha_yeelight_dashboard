@@ -2,9 +2,12 @@ import { LitElement, html, type TemplateResult } from "lit";
 import { live } from "lit/directives/live.js";
 
 import { localize, type TranslationKey } from "../i18n";
+import { renderDisplayPresetPanel } from "./card-editor-display-presets";
 import { renderSelectedEntities } from "./card-editor-entities";
 import { loadCardEditorHaComponents, renderContentForm, renderLayoutForm, renderVisibilityForm } from "./card-editor-form";
-import { DISPLAY_PRESETS, GRID_SIZE_PRESETS, displayPresetPatch, isDisplayPresetActive, recommendedCardSetupPatch } from "./card-editor-presets";
+import { renderModeGuide } from "./card-editor-mode-guide";
+import { GRID_SIZE_PRESETS, recommendedCardSetupPatch } from "./card-editor-presets";
+import { renderSubtypePalette } from "./card-editor-subtype-palette";
 import { cardEditorStyles } from "./card-editor.styles";
 import { normalizeDashboardCardConfig } from "./config";
 import { buildEntityOptions, defaultDomainForCard, filterEntityOptions, recommendedDomainsForCard, type EntityPickerResult } from "./entity-picker";
@@ -18,6 +21,7 @@ export class YeelightDashboardCardEditor extends LitElement {
   static override styles = cardEditorStyles;
 
   private config = normalizeDashboardCardConfig({ type: "custom:yeelight-dashboard-hero-card" });
+  private _cardType = "";
   private _hass?: HomeAssistant;
   private entitySearch = "";
   private entityDomainFilter: string | undefined;
@@ -29,8 +33,20 @@ export class YeelightDashboardCardEditor extends LitElement {
     loadCardEditorHaComponents();
   }
 
+  set cardType(value: string | undefined) {
+    this._cardType = value || "";
+    if (value && this.config.type === "custom:yeelight-dashboard-hero-card") {
+      this.config = normalizeDashboardCardConfig({ type: value });
+      this.requestUpdate();
+    }
+  }
+
+  get cardType(): string {
+    return this._cardType;
+  }
+
   setConfig(config: DashboardCardConfig): void {
-    this.config = normalizeDashboardCardConfig(config);
+    this.config = normalizeDashboardCardConfig({ ...(this._cardType && !config.type ? { type: this._cardType } : {}), ...config });
     this.requestUpdate();
   }
 
@@ -52,6 +68,8 @@ export class YeelightDashboardCardEditor extends LitElement {
         <fieldset>
           <legend>${localize(this._hass, "editor.card.content")}</legend>
           ${renderContentForm(this._hass, this.config, this.commitPatch, this.applyRecommendedCardSetup)}
+          ${renderSubtypePalette(this._hass, this.config, this.commitPatch)}
+          ${renderModeGuide(this._hass, this.config, entityOptions, this.commitPatch, this.addRecommendedEntities)}
           ${entityOptions.length ? this.renderEntityPicker(pickerResult, entityDomain) : ""}
           ${renderSelectedEntities(this._hass, this.config.entities, entityOptions, this.draggingEntityId, {
             onClear: this.clearEntities,
@@ -89,27 +107,15 @@ export class YeelightDashboardCardEditor extends LitElement {
         <fieldset>
           <legend>${localize(this._hass, "editor.card.visibility")}</legend>
           ${renderVisibilityForm(this._hass, this.config, this.commitPatch)}
-          <div class="preset-bar" aria-label=${localize(this._hass, "editor.display_preset")}>
-            <span>${localize(this._hass, "editor.display_preset")}</span>
-            <div class="preset-actions">
-              ${DISPLAY_PRESETS.map(
-                (preset) => html`
-                  <button class=${isDisplayPresetActive(this.config, preset) ? "active" : ""} type="button" @click=${() => this.commit(displayPresetPatch(preset))}>
-                    ${localize(this._hass, `editor.display_preset.${preset.key}` as TranslationKey)}
-                  </button>
-                `
-              )}
-            </div>
-          </div>
+          ${renderDisplayPresetPanel(this._hass, this.config, this.commitPatch)}
         </fieldset>
-        <yeelight-dashboard-card-editor-preview .config=${this.config} .hass=${this._hass}></yeelight-dashboard-card-editor-preview>
       </div>
     `;
   }
 
   private renderEntityPicker(result: EntityPickerResult, activeDomain: string): TemplateResult {
     const firstAvailable = result.options[0];
-    const recommendedDomains = recommendedDomainsForCard(this.config.type).filter((domain) => result.domains.includes(domain));
+    const recommendedDomains = recommendedDomainsForCard(this.config.type, this.config.subtype).filter((domain) => result.domains.includes(domain));
     const visibleDomains = this.visibleDomainOptions(result.domains, recommendedDomains, activeDomain);
     return html`
       <div class="entity-tools">
@@ -197,7 +203,7 @@ export class YeelightDashboardCardEditor extends LitElement {
   };
 
   private commitPatch = (patch: Partial<DashboardCardConfig>): void => {
-    if (patch.type && patch.type !== this.config.type) {
+    if ((patch.type && patch.type !== this.config.type) || (patch.subtype && patch.subtype !== this.config.subtype)) {
       this.entityDomainFilter = undefined;
     }
     this.commit(patch);
@@ -240,6 +246,10 @@ export class YeelightDashboardCardEditor extends LitElement {
     if (entities.length === this.config.entities.length) return;
     this.commit({ entities });
   }
+
+  private addRecommendedEntities = (entityIds: string[]): void => {
+    this.addVisibleEntities(entityIds);
+  };
 
   private clearEntities = (): void => {
     if (!this.config.entities.length) return;

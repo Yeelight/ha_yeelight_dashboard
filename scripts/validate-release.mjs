@@ -24,6 +24,14 @@ expect(readme.includes(`/hacsfiles/ha_yeelight_dashboard/${expectedFile}`), "REA
 expect(readme.includes(`/local/${expectedFile}`), "README.md must document the manual local resource URL.");
 expect(readmeZh.includes(`/hacsfiles/ha_yeelight_dashboard/${expectedFile}`), "README_zh.md must document the HACS resource URL.");
 expect(readmeZh.includes(`/local/${expectedFile}`), "README_zh.md must document the manual local resource URL.");
+expect(readme.includes("does not create a dashboard automatically"), "README.md must state that install does not auto-create dashboards.");
+expect(readmeZh.includes("不会自动替用户创建一个仪表盘"), "README_zh.md must state that install does not auto-create dashboards.");
+expect(readme.includes("Community dashboards"), "README.md must document the HA Community dashboards creation path.");
+expect(readmeZh.includes("Community dashboards"), "README_zh.md must document the HA Community dashboards creation path.");
+expect(readme.includes("strategy:") && readme.includes("type: custom:yeelight-dashboard"), "README.md must document the strategy YAML type.");
+expect(readmeZh.includes("strategy:") && readmeZh.includes("type: custom:yeelight-dashboard"), "README_zh.md must document the strategy YAML type.");
+expect(readme.includes("ha_yeelight_themes") && readme.includes("fall back"), "README.md must document the optional theme package and fallback behavior.");
+expect(readmeZh.includes("ha_yeelight_themes") && readmeZh.includes("回落"), "README_zh.md must document the optional theme package and fallback behavior.");
 expect(readme.includes("HA_LIVE_DASHBOARD_PATH"), "README.md must document Lovelace dashboard path override for resource smoke.");
 expect(readme.includes("HA_LIVE_RESOURCE_TIMEOUT_MS"), "README.md must document resource fetch timeout for live smoke.");
 expect(readmeZh.includes("HA_LIVE_DASHBOARD_PATH"), "README_zh.md must document Lovelace dashboard path override for resource smoke.");

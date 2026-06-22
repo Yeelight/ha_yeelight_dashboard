@@ -10,6 +10,20 @@ export type DashboardCardKind =
   | "devices"
   | "routines"
   | "environment"
+  | "climate"
+  | "air"
+  | "water"
+  | "power"
+  | "energy"
+  | "infrastructure"
+  | "media"
+  | "camera"
+  | "cameraWall"
+  | "security"
+  | "presence"
+  | "panelActions"
+  | "image"
+  | "note"
   | "ecosystem"
   | "health";
 
@@ -32,6 +46,11 @@ export type DashboardCardConfig = {
   type: string;
   title?: string;
   subtitle?: string;
+  subtype?: string;
+  content?: string;
+  image_url?: string;
+  image_urls?: string[];
+  url?: string;
   entities?: string[];
   area_summaries?: DashboardAreaSummary[];
   density?: "comfortable" | "compact";

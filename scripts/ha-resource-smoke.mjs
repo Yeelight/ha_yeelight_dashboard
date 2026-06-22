@@ -60,14 +60,73 @@ try {
     const hass = document.querySelector("home-assistant")?.hass;
     const generated = await strategy.generate({ profile: "standard" }, hass);
     const overview = generated.views?.find((view) => view.path === "overview");
+    const loadedScripts = [...document.scripts].map((script) => script.src).filter((src) => src.includes("ha_yeelight_dashboard.js"));
+    const installedResource = loadedScripts.at(-1) || "";
+    const installedResourceHash = installedResource ? await hashUrl(installedResource) : "";
+    const savedDashboardSmoke = await validateSavedDashboard(hass);
     return {
       strategyRegistered: Boolean(strategy),
       communityRegistered: window.customStrategies?.some((item) => item.type === "yeelight-dashboard"),
+      loadedScripts,
+      installedResource,
+      installedResourceHash,
+      savedDashboardSmoke,
       viewCount: generated.views?.length ?? 0,
       overviewSections: overview?.sections?.length ?? 0,
       overviewCards: overview?.sections?.reduce((count, section) => count + (section.cards?.length ?? 0), 0) ?? 0,
       registryEntities: Object.keys(hass?.states || {}).length
     };
+
+    async function validateSavedDashboard(currentHass) {
+      const currentPath = location.pathname.split("/").filter(Boolean)[0] || "";
+      if (!currentPath || currentPath === "lovelace") return { ok: true, skipped: true, reason: "default dashboard path" };
+      let config;
+      try {
+        config = await currentHass.callWS({ type: "lovelace/config", url_path: currentPath });
+      } catch (error) {
+        return { ok: true, skipped: true, reason: `cannot read current dashboard: ${error?.message || error}` };
+      }
+      const nativeCards = collectNativeCards(config.views || []);
+      const entityCards = nativeCards.filter((card) => card.entity || Array.isArray(card.entities));
+      const areaCards = nativeCards.filter((card) => card.type === "area");
+      const missingEntityTapActions = entityCards
+        .filter((card) => card.tap_action?.action !== "more-info")
+        .map((card) => ({ type: card.type, entity: card.entity, entities: Array.isArray(card.entities) ? card.entities.length : undefined }));
+      const missingAreaNavigation = areaCards
+        .filter((card) => !card.navigation_path || card.tap_action?.action !== "navigate" || card.tap_action?.navigation_path !== card.navigation_path)
+        .map((card) => ({ area: card.area, navigation_path: card.navigation_path, tap_action: card.tap_action }));
+      return {
+        ok: missingEntityTapActions.length === 0 && missingAreaNavigation.length === 0,
+        dashboardPath: currentPath,
+        nativeCount: nativeCards.length,
+        entityCardCount: entityCards.length,
+        areaCardCount: areaCards.length,
+        missingEntityTapActions,
+        missingAreaNavigation
+      };
+    }
+
+    function collectNativeCards(value) {
+      const cards = [];
+      const visit = (item) => {
+        if (Array.isArray(item)) {
+          item.forEach(visit);
+          return;
+        }
+        if (!item || typeof item !== "object") return;
+        if (typeof item.type === "string" && !item.type.startsWith("custom:")) cards.push(item);
+        Object.values(item).forEach(visit);
+      };
+      visit(value);
+      return cards;
+    }
+
+    async function hashUrl(url) {
+      const response = await fetch(url, { cache: "reload" });
+      const bytes = await response.arrayBuffer();
+      const digest = await crypto.subtle.digest("SHA-256", bytes);
+      return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    }
 
     async function waitForStrategy() {
       const timeoutAt = Date.now() + 30000;
@@ -78,7 +137,14 @@ try {
       throw new Error("Installed dashboard strategy resource was not registered by Home Assistant.");
     }
   });
-  if (!result.strategyRegistered || !result.communityRegistered || !result.viewCount || !result.overviewCards) {
+  if (
+    !result.strategyRegistered ||
+    !result.communityRegistered ||
+    !result.viewCount ||
+    !result.overviewCards ||
+    result.installedResourceHash !== expectedHash ||
+    !result.savedDashboardSmoke?.ok
+  ) {
     throw new Error(`HA resource smoke failed: ${JSON.stringify(result)}`);
   }
   console.log(JSON.stringify({ ok: true, skipped: false, resourcePath, resourceHash, dashboardPath, ...result }, null, 2));

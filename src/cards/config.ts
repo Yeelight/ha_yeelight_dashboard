@@ -1,5 +1,6 @@
 import type { DashboardAreaSummary, DashboardCardConfig } from "./types";
-import { normalizeGridOptionsOverride } from "./grid-options";
+import { kindFromCardType, normalizeGridOptionsOverride } from "./grid-options";
+import { normalizeSubtype } from "./card-subtypes";
 
 export type NormalizedDashboardCardConfig = DashboardCardConfig & {
   entities: string[];
@@ -13,11 +14,17 @@ export type NormalizedDashboardCardConfig = DashboardCardConfig & {
 };
 
 export function normalizeDashboardCardConfig(config: Partial<DashboardCardConfig> = {}): NormalizedDashboardCardConfig {
+  const type = typeof config.type === "string" && config.type ? config.type : "custom:yeelight-dashboard-hero-card";
   return {
     ...config,
-    type: typeof config.type === "string" && config.type ? config.type : "custom:yeelight-dashboard-hero-card",
+    type,
     title: typeof config.title === "string" ? config.title : undefined,
     subtitle: typeof config.subtitle === "string" ? config.subtitle : undefined,
+    subtype: normalizeSubtype(kindFromCardType(type), config.subtype),
+    content: stringValue(config.content),
+    image_url: stringValue(config.image_url),
+    image_urls: uniqueStrings(config.image_urls),
+    url: stringValue(config.url),
     entities: uniqueStrings(config.entities),
     area_summaries: Array.isArray(config.area_summaries) ? config.area_summaries : [],
     density: enumValue(config.density, ["comfortable", "compact"], "comfortable"),
@@ -32,6 +39,10 @@ export function normalizeDashboardCardConfig(config: Partial<DashboardCardConfig
 
 export function visibleLimit(config: DashboardCardConfig, fallback: number): number {
   return optionalClampedNumber(config.item_limit, 1, 24) ?? fallback;
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
 }
 
 function uniqueStrings(value: unknown): string[] {

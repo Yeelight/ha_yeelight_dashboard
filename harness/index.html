@@ -10,12 +10,45 @@
       }
     </script>
     <script type="module" src="../dist/ha_yeelight_dashboard.js"></script>
+    <style>
+      .fixed-card-shell {
+        width: 374px;
+        height: 360px;
+      }
+
+      .fixed-card-shell > yeelight-dashboard-hero-card {
+        height: 100%;
+      }
+
+      .product-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(320px, 1fr));
+        align-items: start;
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .product-grid > * {
+        height: 360px;
+        min-height: 0;
+      }
+
+      @media (max-width: 760px) {
+        .product-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
   </head>
   <body>
-    <yeelight-dashboard-hero-card></yeelight-dashboard-hero-card>
+    <yeelight-dashboard-hero-card id="hero"></yeelight-dashboard-hero-card>
+    <div class="fixed-card-shell">
+      <yeelight-dashboard-hero-card id="fixed-hero"></yeelight-dashboard-hero-card>
+    </div>
+    <div class="product-grid" id="product-cards"></div>
     <yeelight-dashboard-canvas-view></yeelight-dashboard-canvas-view>
     <script type="module">
-      const card = document.querySelector("yeelight-dashboard-hero-card");
+      const card = document.querySelector("#hero");
       card.setConfig({ type: "custom:yeelight-dashboard-hero-card", entities: ["light.ceiling", "scene.movie", "update.gateway"] });
       card.hass = {
         connected: true,
@@ -27,6 +60,85 @@
         },
         callService() {}
       };
+      const richStates = Object.fromEntries(
+        Array.from({ length: 24 }, (_, index) => {
+          const entityId = `light.generated_${index + 1}`;
+          return [entityId, { entity_id: entityId, state: index % 2 ? "off" : "on", attributes: { friendly_name: `Generated Light ${index + 1}` } }];
+        })
+      );
+      const fixedHero = document.querySelector("#fixed-hero");
+      fixedHero.setConfig({
+        type: "custom:yeelight-dashboard-hero-card",
+        title: "Fixed Sections Hero",
+        entities: Object.keys(richStates),
+        area_summaries: Array.from({ length: 6 }, (_, index) => ({
+          areaId: `area-${index + 1}`,
+          name: `Area ${index + 1}`,
+          entityCount: 24,
+          lightCount: 12,
+          activeLightCount: 6,
+          routineCount: 2,
+          issueCount: index % 2
+        }))
+      });
+      fixedHero.hass = {
+        connected: true,
+        locale: { language: "zh-Hans" },
+        states: richStates,
+        callService() {}
+      };
+
+      const productStates = {
+        "light.living": { entity_id: "light.living", state: "on", attributes: { friendly_name: "Living Light" } },
+        "switch.wall_plug": { entity_id: "switch.wall_plug", state: "on", attributes: { friendly_name: "Wall Plug" } },
+        "scene.movie": { entity_id: "scene.movie", state: "off", attributes: { friendly_name: "Movie Scene" } },
+        "script.goodnight": { entity_id: "script.goodnight", state: "off", attributes: { friendly_name: "Good Night Script" } },
+        "weather.home": { entity_id: "weather.home", state: "sunny", attributes: { friendly_name: "Home Weather", temperature: 24, temperature_unit: "°C" } },
+        "climate.living": { entity_id: "climate.living", state: "cool", attributes: { friendly_name: "Living AC", current_temperature: 25, temperature: 24, temperature_unit: "°C" } },
+        "fan.ceiling": { entity_id: "fan.ceiling", state: "on", attributes: { friendly_name: "Ceiling Fan" } },
+        "humidifier.room": { entity_id: "humidifier.room", state: "off", attributes: { friendly_name: "Room Humidifier" } },
+        "sensor.humidity": { entity_id: "sensor.humidity", state: "48", attributes: { friendly_name: "Humidity", device_class: "humidity", unit_of_measurement: "%" } },
+        "sensor.water_filter": { entity_id: "sensor.water_filter", state: "83", attributes: { friendly_name: "Water Filter", unit_of_measurement: "%" } },
+        "sensor.plug_power": { entity_id: "sensor.plug_power", state: "42", attributes: { friendly_name: "Plug Power", device_class: "power", unit_of_measurement: "W" } },
+        "sensor.home_energy": { entity_id: "sensor.home_energy", state: "12.5", attributes: { friendly_name: "Home Energy", device_class: "energy", unit_of_measurement: "kWh" } },
+        "sensor.server_cpu": { entity_id: "sensor.server_cpu", state: "32", attributes: { friendly_name: "Server CPU", unit_of_measurement: "%" } },
+        "sensor.router_wan": { entity_id: "sensor.router_wan", state: "online", attributes: { friendly_name: "Router WAN" } },
+        "media_player.speaker": { entity_id: "media_player.speaker", state: "playing", attributes: { friendly_name: "Living Speaker", media_title: "Morning Mix" } },
+        "remote.tv": { entity_id: "remote.tv", state: "on", attributes: { friendly_name: "TV Remote" } },
+        "camera.door": { entity_id: "camera.door", state: "streaming", attributes: { friendly_name: "Door Camera" } },
+        "lock.front": { entity_id: "lock.front", state: "locked", attributes: { friendly_name: "Front Lock" } },
+        "person.dong": { entity_id: "person.dong", state: "home", attributes: { friendly_name: "Dong" } },
+        "binary_sensor.motion": { entity_id: "binary_sensor.motion", state: "on", attributes: { friendly_name: "Hall Motion", device_class: "motion" } },
+        "sensor.status": { entity_id: "sensor.status", state: "ok", attributes: { friendly_name: "Status Note" } }
+      };
+      const productHass = {
+        connected: true,
+        locale: { language: "zh-Hans" },
+        states: productStates,
+        callService() {}
+      };
+      const productHost = document.querySelector("#product-cards");
+      const productCards = [
+        ["yeelight-dashboard-devices-card", { type: "custom:yeelight-dashboard-devices-card", subtype: "universal", entities: ["light.living", "switch.wall_plug", "fan.ceiling", "climate.living"] }],
+        ["yeelight-dashboard-routines-card", { type: "custom:yeelight-dashboard-routines-card", subtype: "commands", entities: ["scene.movie", "script.goodnight"] }],
+        ["yeelight-dashboard-environment-card", { type: "custom:yeelight-dashboard-environment-card", subtype: "overview", entities: ["weather.home", "climate.living", "sensor.humidity"] }],
+        ["yeelight-dashboard-air-card", { type: "custom:yeelight-dashboard-air-card", subtype: "humidifier", entities: ["humidifier.room", "sensor.humidity"] }],
+        ["yeelight-dashboard-power-card", { type: "custom:yeelight-dashboard-power-card", subtype: "socket", entities: ["switch.wall_plug", "sensor.plug_power"] }],
+        ["yeelight-dashboard-infrastructure-card", { type: "custom:yeelight-dashboard-infrastructure-card", subtype: "router", entities: ["sensor.router_wan", "sensor.server_cpu"] }],
+        ["yeelight-dashboard-media-card", { type: "custom:yeelight-dashboard-media-card", subtype: "hub", entities: ["media_player.speaker", "remote.tv"] }],
+        ["yeelight-dashboard-security-card", { type: "custom:yeelight-dashboard-security-card", subtype: "lock", entities: ["lock.front", "binary_sensor.motion"] }],
+        ["yeelight-dashboard-presence-card", { type: "custom:yeelight-dashboard-presence-card", subtype: "family", entities: ["person.dong", "binary_sensor.motion"] }],
+        ["yeelight-dashboard-image-card", { type: "custom:yeelight-dashboard-image-card", subtype: "carousel", image_url: "/local/cover.jpg", image_urls: ["/local/second.jpg | 晚安模式"], content: "客厅相册\n今日精选", entities: ["camera.door"] }],
+        ["yeelight-dashboard-note-card", { type: "custom:yeelight-dashboard-note-card", content: "回家模式\n- 检查门锁\n[x] 打开玄关灯", entities: ["sensor.status"] }],
+        ["yeelight-dashboard-panel-actions-card", { type: "custom:yeelight-dashboard-panel-actions-card", content: "常用快捷\n入户和睡前动作", entities: ["scene.movie", "script.goodnight", "light.living"] }]
+      ];
+      for (const [tag, config] of productCards) {
+        const element = document.createElement(tag);
+        element.setConfig(config);
+        element.hass = productHass;
+        element.dataset.harnessProduct = "1";
+        productHost.append(element);
+      }
 
       const canvas = document.querySelector("yeelight-dashboard-canvas-view");
       const canvasCard = document.createElement("yeelight-dashboard-light-card");

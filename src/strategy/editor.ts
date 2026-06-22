@@ -9,9 +9,20 @@ import {
   VIEW_OPTIONS,
   normalizeConfig
 } from "./config";
-import type { DashboardLayoutOverrides, DashboardViewKey, HomeAssistant, YeelightDashboardConfig } from "../types";
+import type { DashboardLayoutOverride, DashboardLayoutOverrides, DashboardViewKey, HomeAssistant, YeelightDashboardConfig } from "../types";
 import { localize, type TranslationKey } from "../i18n";
 import { strategyEditorStyles } from "./editor.styles";
+import {
+  buildLayoutOverrides,
+  defaultKeyForView,
+  defaultLayoutDraft,
+  draftFromOverrides,
+  parseLayoutOverrides,
+  removeLayoutOverride,
+  renderLayoutOverridesEditor,
+  type LayoutOverrideDraft
+} from "./layout-overrides-editor";
+import { renderProfilePresetsEditor } from "./profile-presets-editor";
 
 export class YeelightDashboardStrategyEditor extends LitElement {
   static override styles = strategyEditorStyles;
@@ -20,9 +31,11 @@ export class YeelightDashboardStrategyEditor extends LitElement {
   private _hass?: HomeAssistant;
   private layoutError = "";
   private layoutMessage = "";
+  private layoutDraft: LayoutOverrideDraft = defaultLayoutDraft();
 
   setConfig(config: Partial<YeelightDashboardConfig>): void {
     this.config = normalizeConfig(config);
+    this.layoutDraft = draftFromOverrides(this.config.layout_overrides, this.layoutDraft);
     this.requestUpdate();
   }
 
@@ -38,6 +51,7 @@ export class YeelightDashboardStrategyEditor extends LitElement {
   protected override render(): TemplateResult {
     return html`
       <div class="editor">
+        ${renderProfilePresetsEditor(this.hass, this.config, { onApplyProfile: this.applyProfile })}
         ${this.renderSelect("editor.strategy.profile", "profile", PROFILE_OPTIONS)}
         ${this.renderSelect("editor.strategy.theme", "theme", THEME_OPTIONS)}
         ${this.renderThemeNotice()}
@@ -71,17 +85,21 @@ export class YeelightDashboardStrategyEditor extends LitElement {
 
   private updateValue(key: keyof YeelightDashboardConfig, value: string): void {
     if (key === "profile") {
-      this.commit({
-        profile: value as YeelightDashboardConfig["profile"],
-        area_mode: this.config.area_mode,
-        selected_areas: this.config.selected_areas,
-        labels: this.config.labels,
-        layout_overrides: this.config.layout_overrides
-      });
+      this.applyProfile(value as YeelightDashboardConfig["profile"]);
       return;
     }
     this.commit({ ...this.config, [key]: value });
   }
+
+  private applyProfile = (profile: YeelightDashboardConfig["profile"]): void => {
+    this.commit({
+      profile,
+      area_mode: this.config.area_mode,
+      selected_areas: this.config.selected_areas,
+      labels: this.config.labels,
+      layout_overrides: this.config.layout_overrides
+    });
+  };
 
   private renderAreas(): TemplateResult {
     const areas = registryAreas(this.hass);
@@ -144,27 +162,24 @@ export class YeelightDashboardStrategyEditor extends LitElement {
 
   private renderLayoutOverrides(): TemplateResult {
     if (this.config.layout_mode !== "canvas") return html``;
-    return html`
-      <fieldset>
-        <legend>${localize(this.hass, "editor.strategy.layout_overrides")}</legend>
-        <label>
-          <span>${localize(this.hass, "editor.strategy.managed_canvas_json")}</span>
-          <textarea
-            .value=${JSON.stringify(this.config.layout_overrides || {}, null, 2)}
-            @change=${(event: Event) => this.updateLayoutOverrides((event.target as HTMLTextAreaElement).value)}
-          ></textarea>
-        </label>
-        <div class="inline-actions">
-          <button type="button" @click=${this.importLayoutOverridesFromClipboard}>${localize(this.hass, "editor.strategy.import_canvas_layout")}</button>
-          <button type="button" @click=${this.clearLayoutOverrides}>${localize(this.hass, "editor.strategy.reset_layout")}</button>
-        </div>
-        ${this.layoutError
-          ? html`<span class="error">${this.layoutError}</span>`
-          : this.layoutMessage
-            ? html`<span class="success">${this.layoutMessage}</span>`
-            : html`<span>${localize(this.hass, "editor.strategy.layout_help")}</span>`}
-      </fieldset>
-    `;
+    return renderLayoutOverridesEditor(
+      this.hass,
+      this.config.layout_overrides,
+      this.layoutDraft,
+      { error: this.layoutError, message: this.layoutMessage },
+      {
+        onViewChange: this.updateLayoutDraftView,
+        onKeyChange: this.updateLayoutDraftKey,
+        onFieldChange: this.updateLayoutDraftField,
+        onPreset: this.applyLayoutPreset,
+        onUseExisting: this.useExistingLayoutOverride,
+        onApply: this.applyLayoutDraft,
+        onRemove: this.removeLayoutDraft,
+        onJsonChange: this.updateLayoutOverrides,
+        onImport: this.importLayoutOverridesFromClipboard,
+        onClear: this.clearLayoutOverrides
+      }
+    );
   }
 
   private renderPreferenceSelect(labelKey: TranslationKey, key: keyof YeelightDashboardConfig["preferences"], options: string[]): TemplateResult {
@@ -235,7 +250,66 @@ export class YeelightDashboardStrategyEditor extends LitElement {
     this.commit({ ...this.config, preferences: { ...this.config.preferences, [key]: value } });
   }
 
-  private updateLayoutOverrides(value: string): void {
+  private updateLayoutDraftView = (view: DashboardViewKey): void => {
+    const key = this.config.layout_overrides?.[view]?.[this.layoutDraft.key] ? this.layoutDraft.key : defaultKeyForView(view);
+    this.layoutDraft = draftFromOverrides(this.config.layout_overrides, { ...defaultLayoutDraft(view), key });
+    this.layoutMessage = "";
+    this.layoutError = "";
+    this.requestUpdate();
+  };
+
+  private updateLayoutDraftKey = (key: string): void => {
+    this.layoutDraft = draftFromOverrides(this.config.layout_overrides, { ...this.layoutDraft, key });
+    this.layoutMessage = "";
+    this.layoutError = "";
+    this.requestUpdate();
+  };
+
+  private updateLayoutDraftField = (field: keyof LayoutOverrideDraft, value: string): void => {
+    if (field === "view" || field === "key") return;
+    const number = Number(value);
+    this.layoutDraft = { ...this.layoutDraft, [field]: Number.isFinite(number) ? Math.round(number) : undefined };
+    this.layoutMessage = "";
+    this.layoutError = "";
+    this.requestUpdate();
+  };
+
+  private applyLayoutPreset = (preset: DashboardLayoutOverride): void => {
+    this.layoutDraft = { ...this.layoutDraft, ...preset };
+    this.layoutMessage = "";
+    this.layoutError = "";
+    this.requestUpdate();
+  };
+
+  private useExistingLayoutOverride = (view: DashboardViewKey, key: string): void => {
+    this.layoutDraft = draftFromOverrides(this.config.layout_overrides, { ...defaultLayoutDraft(view), key });
+    this.layoutMessage = "";
+    this.layoutError = "";
+    this.requestUpdate();
+  };
+
+  private applyLayoutDraft = (): void => {
+    const key = this.layoutDraft.key.trim();
+    if (!key) {
+      this.layoutError = localize(this.hass, "editor.strategy.layout_key_required");
+      this.layoutMessage = "";
+      this.requestUpdate();
+      return;
+    }
+    const next = buildLayoutOverrides(this.config.layout_overrides, this.layoutDraft);
+    this.layoutDraft = { ...this.layoutDraft, key };
+    this.layoutError = "";
+    this.layoutMessage = localize(this.hass, "editor.strategy.layout_applied");
+    this.commit({ ...this.config, layout_overrides: next });
+  };
+
+  private removeLayoutDraft = (): void => {
+    this.layoutError = "";
+    this.layoutMessage = localize(this.hass, "editor.strategy.layout_removed");
+    this.commit({ ...this.config, layout_overrides: removeLayoutOverride(this.config.layout_overrides, this.layoutDraft) });
+  };
+
+  private updateLayoutOverrides = (value: string): void => {
     const trimmed = value.trim();
     if (!trimmed) {
       this.layoutError = "";
@@ -247,13 +321,14 @@ export class YeelightDashboardStrategyEditor extends LitElement {
       const parsed = parseLayoutOverrides(trimmed);
       this.layoutError = "";
       this.layoutMessage = "";
+      this.layoutDraft = draftFromOverrides(parsed, this.layoutDraft);
       this.commit({ ...this.config, layout_overrides: parsed });
     } catch {
       this.layoutError = localize(this.hass, "editor.strategy.invalid_json");
       this.layoutMessage = "";
       this.requestUpdate();
     }
-  }
+  };
 
   private importLayoutOverridesFromClipboard = async (): Promise<void> => {
     try {
@@ -267,6 +342,7 @@ export class YeelightDashboardStrategyEditor extends LitElement {
       const parsed = parseLayoutOverrides(text);
       this.layoutError = "";
       this.layoutMessage = localize(this.hass, "editor.strategy.layout_imported");
+      this.layoutDraft = draftFromOverrides(parsed, this.layoutDraft);
       this.commit({ ...this.config, layout_overrides: parsed });
     } catch {
       this.layoutError = localize(this.hass, "editor.strategy.layout_import_failed");
@@ -278,6 +354,7 @@ export class YeelightDashboardStrategyEditor extends LitElement {
   private clearLayoutOverrides = (): void => {
     this.layoutError = "";
     this.layoutMessage = localize(this.hass, "editor.strategy.layout_reset");
+    this.layoutDraft = defaultLayoutDraft(this.layoutDraft.view);
     this.commit({ ...this.config, layout_overrides: undefined });
   };
 
@@ -305,20 +382,4 @@ function themeAvailable(hass: HomeAssistant | undefined, theme: string): boolean
   const themes = hass?.themes?.themes;
   if (!themes || typeof themes !== "object" || !Object.keys(themes).length) return undefined;
   return Object.prototype.hasOwnProperty.call(themes, theme);
-}
-
-function parseLayoutOverrides(value: string): DashboardLayoutOverrides {
-  const parsed = JSON.parse(value) as unknown;
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("Invalid layout overrides");
-  }
-  const object = parsed as Record<string, unknown>;
-  if (object.layout_overrides && typeof object.layout_overrides === "object" && !Array.isArray(object.layout_overrides)) {
-    return object.layout_overrides as DashboardLayoutOverrides;
-  }
-  const strategy = object.strategy as Record<string, unknown> | undefined;
-  if (strategy?.layout_overrides && typeof strategy.layout_overrides === "object" && !Array.isArray(strategy.layout_overrides)) {
-    return strategy.layout_overrides as DashboardLayoutOverrides;
-  }
-  return object as DashboardLayoutOverrides;
 }

@@ -4,11 +4,47 @@ import { normalizeEntity } from "./entity-model";
 import type { NormalizedEntity } from "./types";
 
 export type EntityAction = "toggle" | "activate" | "press";
+export type NavigationTarget = {
+  viewPath: string;
+  nativePath?: string;
+};
 
 const TOGGLE_DOMAINS = new Set(["light", "switch", "fan"]);
+const DASHBOARD_VIEW_PATHS = new Set(["overview", "lighting", "areas", "scenes", "environment", "media", "health", "floorplan"]);
 
 export function fireMoreInfo(host: HTMLElement, entityId: string): void {
   host.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId }, bubbles: true, composed: true }));
+}
+
+export function navigateToDashboardView(viewPath: string): void {
+  const target = new URL(window.location.href);
+  const segments = target.pathname.split("/").filter(Boolean);
+  if (segments.length > 1 || DASHBOARD_VIEW_PATHS.has(segments[segments.length - 1])) {
+    segments[segments.length - 1] = viewPath;
+  } else {
+    segments.push(viewPath);
+  }
+  target.pathname = `/${segments.join("/")}`;
+  window.history.pushState(null, "", `${target.pathname}${target.search}${target.hash}`);
+  window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
+}
+
+export function navigateToTarget(target: NavigationTarget): void {
+  if (target.nativePath) {
+    navigateToNativePath(target.nativePath);
+    return;
+  }
+  navigateToDashboardView(target.viewPath);
+}
+
+export function navigateToNativePath(path: string): void {
+  const target = new URL(path, window.location.origin);
+  window.history.pushState(null, "", `${target.pathname}${target.search}${target.hash}`);
+  window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
+}
+
+export function areaNativePath(areaId: string): string {
+  return `/home/areas-${encodeURIComponent(areaId)}?historyBack=1`;
 }
 
 export async function executeEntityAction(
