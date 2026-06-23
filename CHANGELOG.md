@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-06-23
+
+### Changed
+
+- Install Playwright Chromium in GitHub Actions before browser smoke checks so HACS validation and tag release workflows are repeatable on fresh runners.
+
 ## [0.1.2] - 2026-06-23
 
 ### Added
