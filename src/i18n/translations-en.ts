@@ -445,7 +445,7 @@ export const EN = {
   "editor.image_sources_hint": "The first item is the cover; later items become carousel images. Supports /local/, /hacsfiles/, /api/ or http(s) URLs.",
   "editor.image_source_cover": "Cover image",
   "editor.image_source_item": "Carousel image {index}",
-  "editor.image_source_url_placeholder": "/local/yeelight/photo.jpg",
+  "editor.image_source_url_placeholder": "/local/photo.jpg",
   "editor.image_source_title": "Title",
   "editor.image_source_title_placeholder": "e.g. Living room mood",
   "editor.image_source_move_up": "Move up",

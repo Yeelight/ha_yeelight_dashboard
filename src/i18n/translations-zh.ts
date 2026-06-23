@@ -447,7 +447,7 @@ export const ZH: Record<keyof typeof EN, string> = {
   "editor.image_sources_hint": "第一项作为封面；后续项作为轮播图片。支持 /local/、/hacsfiles/、/api/ 或 http(s) 地址。",
   "editor.image_source_cover": "封面图片",
   "editor.image_source_item": "轮播图片 {index}",
-  "editor.image_source_url_placeholder": "/local/yeelight/photo.jpg",
+  "editor.image_source_url_placeholder": "/local/photo.jpg",
   "editor.image_source_title": "标题",
   "editor.image_source_title_placeholder": "如 客厅氛围",
   "editor.image_source_move_up": "上移",

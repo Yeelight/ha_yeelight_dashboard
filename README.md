@@ -13,7 +13,7 @@ It is not a backend device integration, not a runtime dependency on `ha_yeelight
 | `ha_yeelight_pro` | Yeelight device integration, HA entities, services, and device capabilities. |
 | `ha_yeelight_themes` | Yeelight visual tokens and HA theme variables. Recommended, not required. |
 | `ha_yeelight_cards` | Lightweight Lovelace cards for manual HA dashboard users. Not required by this dashboard. |
-| `ha_yeelight_dashboard` | Product-style generated dashboard, strategy editor, recipes, internal dashboard cards, and legacy migration inventory. |
+| `ha_yeelight_dashboard` | Product-style generated dashboard, strategy editor, recipes, internal dashboard cards, and legacy-derived product subtypes. |
 
 ## Current MVP
 
@@ -27,7 +27,7 @@ It is not a backend device integration, not a runtime dependency on `ha_yeelight
 - Provides product composite cards such as `custom:yeelight-dashboard-hero-card`, `status-card`, `notice-card`, `light-card`, `rooms-card`, `room-card`, `devices-card`, `routines-card`, `environment-card`, `climate-card`, `air-card`, `water-card`, `power-card`, `energy-card`, `infrastructure-card`, `media-card`, `camera-card`, `camera-wall-card`, `security-card`, `presence-card`, `panel-actions-card`, `image-card`, `note-card`, `ecosystem-card`, and `health-card`; they register HA visual editors through `window.customCards` for take-control/manual editing, but remain dashboard-focused and do not replace the lightweight `ha_yeelight_cards` package.
 - Migrates high-value legacy widgets as card `subtype` modes instead of reintroducing the old runtime. This includes the original core modes such as panel hero, time, daily quote, favorite lights, light status, device list/single, quick scenes, scripts, automations, weather, illuminance, updates, events and history, plus the media/camera/security/presence/climate/air/water/power/energy/infrastructure/panel-actions/image/note families.
 - Every migrated product subtype is exposed through the HA visual card editor, with localized labels, recommended entity domains, grid sizing, display presets, HA's right-side card preview, and a compact section-size preview. HA-native media, camera, weather, sensor, area, cover, vacuum, calendar, todo, logbook, map, history and energy capabilities remain native recipes where appropriate.
-- Keeps a generated legacy inventory under `docs/legacy-inventory/`.
+- The old generated inventory was used for migration and is no longer shipped; coverage is now locked by subtype and recipe tests.
 
 ## Installation
 
@@ -130,16 +130,6 @@ npm run test:ha-resource
 `test:ha-resource` checks that `/local/ha_yeelight_dashboard.js` hashes exactly to `dist/ha_yeelight_dashboard.js`, then opens the Lovelace dashboard path and waits for HA itself to load the resource and expose `window.customStrategies`. It defaults to `/lovelace`; set `HA_LIVE_DASHBOARD_PATH` if your dashboard uses another URL path. Opening the HA 2026 `/home` route is not enough, because that route does not load Lovelace resources.
 
 Both live smoke scripts wait for at least one `hass.states` entry before generating by default. Use `HA_LIVE_MIN_STATES=0` only for intentional empty-state fixtures, `HA_LIVE_TIMEOUT_MS` to tune slow browser navigation, and `HA_LIVE_RESOURCE_TIMEOUT_MS` to tune the upfront `/local/...` resource fetch timeout.
-
-## Legacy Inventory
-
-Regenerate the legacy inventory from the monorepo root:
-
-```bash
-node "extensions/ha_yeelight_dashboard/tools/legacy-migrator/scan-legacy-inventory.mjs"
-```
-
-The inventory covers the old local implementation under `config/` and `custom_components/yeelight_dashboard/`.
 
 ## License
 
