@@ -24,6 +24,8 @@ expect(distFiles.length === 1 && distFiles[0] === expectedFile, `dist/ must cont
 expect(existsSync(join(root, ".github/workflows/validate.yml")), "GitHub Actions validate workflow is required for HACS publication.");
 expect(existsSync(join(root, ".github/workflows/release.yml")), "GitHub Actions release workflow is required for repeatable HACS asset publication.");
 expect(readFileSync(join(root, ".github/workflows/validate.yml"), "utf8").includes("category: plugin"), "HACS validation workflow must use plugin category.");
+expect(readFileSync(join(root, ".github/workflows/validate.yml"), "utf8").includes("playwright install --with-deps chromium"), "Validate workflow must install Playwright Chromium before browser smoke.");
+expect(readFileSync(join(root, ".github/workflows/release.yml"), "utf8").includes("playwright install --with-deps chromium"), "Release workflow must install Playwright Chromium before browser smoke.");
 expect(existsSync(join(root, "assets/screenshots/dashboard-preview.png")), "README must include a real dashboard screenshot for HACS review.");
 expect(readme.includes(`/hacsfiles/ha_yeelight_dashboard/${expectedFile}`), "README.md must document the HACS resource URL.");
 expect(readme.includes(`/local/${expectedFile}`), "README.md must document the manual local resource URL.");
