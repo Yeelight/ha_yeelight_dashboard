@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-23
+
+### Changed
+- Lock legacy-derived coverage to current product card subtypes, dashboard card definitions, recipes, and native recipe mapping tests.
+- Update image URL editor placeholder examples so new installs no longer point at the retired `/local/yeelight/` runtime path.
+
+### Removed
+- Remove migration-only legacy inventory documentation and scanner tooling from the HACS package repository after the v0.1.0 migration was validated.
+
 ## [0.1.0] - 2026-06-22
 
 ### Added
