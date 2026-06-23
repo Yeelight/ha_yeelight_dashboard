@@ -3,7 +3,6 @@
   "filename": "ha_yeelight_dashboard.js",
   "render_readme": true,
   "content_in_root": false,
-  "country": ["CN", "US", "EU"],
   "homeassistant": "2026.5.0",
   "hacs": "2.0.0"
 }

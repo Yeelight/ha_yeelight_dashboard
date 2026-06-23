@@ -6,6 +6,8 @@ Yeelight Dashboard is a Home Assistant Community Dashboard Strategy that generat
 
 It is not a backend device integration, not a runtime dependency on `ha_yeelight_cards`, and not a direct port of the legacy panel runtime.
 
+![Yeelight Dashboard preview](assets/screenshots/dashboard-preview.png)
+
 ## Positioning
 
 | Project | Responsibility |
@@ -32,6 +34,15 @@ It is not a backend device integration, not a runtime dependency on `ha_yeelight
 ## Installation
 
 `ha_yeelight_dashboard` is a frontend dashboard strategy. Installing the resource registers the strategy and dashboard cards, but it does not create a dashboard automatically. Create one Yeelight dashboard after the resource is loaded; from that point the strategy generates views and cards from the current Home Assistant registries and `hass.states`.
+
+### HACS Installation
+
+[![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Yeelight&repository=ha_yeelight_dashboard&category=plugin)
+
+1. Open HACS.
+2. Add this repository as a custom repository with category **Dashboard** or **Plugin**, or install it from the HACS catalog when available.
+3. Install **Yeelight Dashboard**.
+4. Reload the browser so Home Assistant loads the frontend module.
 
 Install the built frontend resource:
 
@@ -97,6 +108,8 @@ npm run test:browser
 ```
 
 The release bundle is `dist/ha_yeelight_dashboard.js`.
+
+Release publication is automated by `.github/workflows/release.yml` when a `v*` tag is pushed. The HACS release asset must stay named `ha_yeelight_dashboard.js`.
 
 Optional authenticated live Home Assistant smoke:
 

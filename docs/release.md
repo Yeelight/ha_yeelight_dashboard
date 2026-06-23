@@ -45,11 +45,12 @@ npm run test:ha-resource
 
 1. Ensure `CHANGELOG.md` has a dated section for the release version.
 2. Ensure `dist/ha_yeelight_dashboard.js` is built locally and matches the version being tagged. `dist/` is ignored in Git, so the built file must be uploaded as a GitHub Release asset.
-3. Commit only the dashboard repository changes; do not include unrelated parent repository work.
-4. Tag the commit as `v<version>`.
-5. Push the branch and tag to GitHub.
-6. Create a GitHub Release from the tag and upload `dist/ha_yeelight_dashboard.js` as the release asset named `ha_yeelight_dashboard.js`. Do not upload a zip file.
-7. After GitHub indexes the release, install or update through HACS and verify the resource URL:
+3. Keep `.github/workflows/validate.yml` passing with HACS category `plugin`; this is the category HACS uses for frontend dashboard resources.
+4. Commit only the dashboard repository changes; do not include unrelated parent repository work.
+5. Tag the commit as `v<version>`.
+6. Push the branch and tag to GitHub.
+7. Let `.github/workflows/release.yml` create/update the GitHub Release, or manually create a GitHub Release from the tag and upload `dist/ha_yeelight_dashboard.js` as the release asset named `ha_yeelight_dashboard.js`. Do not upload a zip file.
+8. After GitHub indexes the release, install or update through HACS and verify the resource URL:
 
 ```yaml
 url: /hacsfiles/ha_yeelight_dashboard/ha_yeelight_dashboard.js
@@ -57,3 +58,11 @@ type: module
 ```
 
 Installation registers the frontend resource and Community Dashboard strategy. It does not automatically create a Home Assistant dashboard for the user.
+
+## HACS Default Store
+
+Before submitting to the HACS default repository list, verify this repository works as a custom HACS repository and that the HACS GitHub Action passes. Submit the repository under the `plugin` category with:
+
+```text
+Yeelight/ha_yeelight_dashboard
+```

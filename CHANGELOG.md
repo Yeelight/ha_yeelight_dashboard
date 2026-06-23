@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-23
+
+### Added
+
+- Add GitHub Actions validation for HACS plugin publication and repeatable release asset uploads.
+- Add HACS custom repository badges and a real dashboard screenshot to the English and Chinese README files.
+
+### Changed
+
+- Align `hacs.json` with frontend plugin publication by removing region restrictions and keeping a single JavaScript release asset.
+- Document HACS default-store submission under the `plugin` category.
+
 ## [0.1.1] - 2026-06-23
 
 ### Changed
